@@ -17,9 +17,9 @@ const ButtonCancel: React.FC<ButtonCancelProps> = ({
     type="button"
     className={cn(
       buttonVariants({
-        variant: undefined,
+        variant: "outline",
         size,
-        className: `bg-zinc-800 hover:bg-zinc-700 text-sm font-medium transition-colors cursor-pointer ${className}`,
+        className: `border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer rounded-xl font-bold ${className}`,
       })
     )}
     {...props}

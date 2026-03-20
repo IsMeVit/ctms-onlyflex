@@ -1,16 +1,14 @@
 "use client";
 
+import { Search, Filter, Monitor, Building2 } from "lucide-react";
+
 interface Hall {
   id: string;
   name: string;
   hallType: string;
   screenType: string;
   capacity: number;
-  rows: number;
-  columns: number;
   isActive: boolean;
-  isPublished: boolean;
-  createdAt: string;
   _count: {
     showtimes: number;
     seats: number;
@@ -24,43 +22,16 @@ interface HallListProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   typeFilter: string;
-  onTypeFilterChange: (type: string) => void;
+  onTypeFilterChange: (filter: string) => void;
   isMobile?: boolean;
 }
 
 const hallTypes = [
   { value: "all", label: "All Types" },
-  { value: "STANDARD", label: "Standard" },
+  { value: "REGULAR", label: "Regular" },
+  { value: "PREMIUM", label: "Premium" },
   { value: "VIP", label: "VIP" },
-  { value: "Regular", label: "Regular" },
 ];
-
-const getHallTypeBadge = (type: string) => {
-  const colors: Record<string, string> = {
-    STANDARD: "bg-blue-100 text-blue-800",
-    VIP: "bg-purple-100 text-purple-800",
-    Regular: "bg-gray-100 text-gray-800",
-  };
-  return colors[type] || "bg-gray-100 text-gray-800";
-};
-
-const getScreenTypeBadge = (type: string) => {
-  const colors: Record<string, string> = {
-    STANDARD_2D: "bg-green-100 text-green-800",
-    THREE_D: "bg-red-100 text-red-800",
-    SCREENX: "bg-orange-100 text-orange-800",
-  };
-  return colors[type] || "bg-gray-100 text-gray-800";
-};
-
-const formatScreenType = (type: string) => {
-  const labels: Record<string, string> = {
-    STANDARD_2D: "2D",
-    THREE_D: "3D",
-    SCREENX: "ScreenX",
-  };
-  return labels[type] || type;
-};
 
 export default function HallList({
   halls,
@@ -73,123 +44,88 @@ export default function HallList({
   isMobile = false,
 }: HallListProps) {
   return (
-    <div className="h-full flex flex-col">
-      {/* Search & Filter */}
-      <div className="p-4 space-y-3 border-b bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-[#09090b]">
+      {/* Search & Filter Header */}
+      <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30">
         <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400 dark:text-zinc-600" />
           <input
             type="text"
-            placeholder="Search halls..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            placeholder="Search halls..."
+            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
           />
-          <svg
-            className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
         </div>
-
-        <select
-          value={typeFilter}
-          onChange={(e) => onTypeFilterChange(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-        >
-          {hallTypes.map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <Filter className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400 dark:text-zinc-600" />
+          <select
+            value={typeFilter}
+            onChange={(e) => onTypeFilterChange(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all appearance-none cursor-pointer"
+          >
+            {hallTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Hall List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
         {halls.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p className="text-sm">No halls found</p>
-            <p className="text-xs mt-1">Try adjusting your filters</p>
+          <div className="py-12 text-center text-zinc-500 dark:text-zinc-400">
+            <Building2 className="h-8 w-8 mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-medium">No halls found</p>
           </div>
         ) : (
-          halls.map((hall) => (
-            <button
-              key={hall.id}
-              onClick={() => onSelectHall(hall)}
-              className={`w-full text-left p-3 rounded-lg transition-all ${
-                selectedHall?.id === hall.id
-                  ? "bg-indigo-50 border-indigo-200 border"
-                  : "hover:bg-gray-50 border border-transparent"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎬</span>
-                    <h4 className="font-semibold text-sm text-gray-900 truncate">
+          <div className="space-y-1">
+            {halls.map((hall) => {
+              const isSelected = selectedHall?.id === hall.id;
+              return (
+                <button
+                  key={hall.id}
+                  onClick={() => onSelectHall(hall)}
+                  className={`w-full text-left p-4 rounded-xl transition-all group ${
+                    isSelected
+                      ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30"
+                      : "bg-transparent border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span className={`font-bold text-sm ${isSelected ? "text-red-700 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"}`}>
                       {hall.name}
-                    </h4>
+                    </span>
+                    {!hall.isActive && (
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                        Inactive
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getHallTypeBadge(
-                        hall.hallType
-                      )}`}
-                    >
-                      {hall.hallType}
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getScreenTypeBadge(
-                        hall.screenType
-                      )}`}
-                    >
-                      {formatScreenType(hall.screenType)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {hall.capacity} seats
-                    </span>
+                  <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                    <div className="flex items-center gap-1">
+                      <Monitor className="h-3 w-3" />
+                      {hall.screenType.replace("_", " ")}
+                    </div>
+                    <span>•</span>
+                    <span>{hall.capacity || hall._count.seats} Seats</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 ml-2">
-                  {hall.isActive ? (
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-                  ) : (
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-300"></span>
-                  )}
-                  {hall.isPublished ? (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Pub</span>
-                  ) : (
-                    <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Draft</span>
-                  )}
-                  {isMobile && (
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Footer Info */}
+      {!isMobile && (
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 text-[10px] text-zinc-400 dark:text-zinc-600 font-bold uppercase tracking-widest flex justify-between">
+          <span>Total: {halls.length}</span>
+          <span>Updated Live</span>
+        </div>
+      )}
     </div>
   );
 }

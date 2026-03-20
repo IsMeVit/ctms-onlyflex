@@ -2,6 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { 
+  X, 
+  Clock, 
+  DollarSign, 
+  Film, 
+  Monitor, 
+  TrendingUp, 
+  AlertTriangle,
+  Loader2,
+  Save
+} from "lucide-react";
 
 interface Movie {
   id: string;
@@ -105,8 +116,8 @@ export default function ShowtimeForm({
         const data = await response.json();
         setMovies(data.movies || []);
       }
-    } catch (err) {
-      console.error("Error fetching movies:", err);
+    } catch {
+      console.error("Error fetching movies");
     } finally {
       setIsLoadingData(false);
     }
@@ -123,8 +134,8 @@ export default function ShowtimeForm({
         );
         setHalls(activeHalls);
       }
-    } catch (err) {
-      console.error("Error fetching halls:", err);
+    } catch {
+      console.error("Error fetching halls");
     } finally {
       setIsLoadingData(false);
     }
@@ -219,162 +230,163 @@ export default function ShowtimeForm({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-50 transition-colors">
+        
         {/* Header */}
-        <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50/50">
+        <div className="px-8 py-5 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
           <div>
-            <h3 className="text-xl font-bold text-slate-900">
-              {showtime ? "Edit Showtime" : "Schedule Showtime"}
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+              {showtime ? "Edit Showtime Schedule" : "Schedule New Screening"}
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5 font-medium">
-              Set up movie screening schedule
-            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Assign movie, hall, and pricing for this session.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button onClick={onClose} className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-500 dark:text-zinc-400">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-sm font-semibold rounded-r-lg">
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 text-sm font-bold rounded-r-xl flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5" />
               {error}
             </div>
           )}
 
           {isLoadingData ? (
-            <div className="py-12 text-center text-slate-900 font-bold">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mb-2"></div>
-              <p>Loading movies and halls...</p>
+            <div className="py-20 text-center flex flex-col items-center gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-red-500" />
+              <p className="text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest text-xs">Loading Resources...</p>
             </div>
           ) : (
-            <>
-              {/* Movie Selection */}
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-slate-700">
-                    Movie <span className="text-red-500">*</span>
+            <div className="space-y-8">
+              {/* Selection Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Film className="w-3.5 h-3.5" /> Movie
                   </label>
                   <select
                     name="movieId"
                     value={formData.movieId}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium focus:border-red-500 outline-none dark:bg-[#09090b]"
                   >
-                    <option value="" className="text-slate-400">Select a movie...</option>
+                    <option value="">Select a movie...</option>
                     {movies.map((movie) => (
-                      <option key={movie.id} value={movie.id} className="text-slate-900">
-                        {movie.title} {movie.duration ? ` (${movie.duration} min)` : ""}
+                      <option key={movie.id} value={movie.id}>
+                        {movie.title}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {selectedMovie && (
-                  <div className="flex items-center gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-                    {selectedMovie.posterUrl ? (
-                      <Image
-                        src={selectedMovie.posterUrl}
-                        alt={selectedMovie.title}
-                        width={48}
-                        height={72}
-                        className="object-cover rounded-lg shadow-sm"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-12 h-16 bg-indigo-200 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                        </svg>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-base font-extrabold text-indigo-950">{selectedMovie.title}</p>
-                      <p className="text-sm font-bold text-indigo-600">Duration: {selectedMovie.duration || 0} minutes</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Hall Selection */}
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-slate-700">
-                    Hall <span className="text-red-500">*</span>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Monitor className="w-3.5 h-3.5" /> Cinema Hall
                   </label>
                   <select
                     name="hallId"
                     value={formData.hallId}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium focus:border-red-500 outline-none dark:bg-[#09090b]"
                   >
-                    <option value="" className="text-slate-400">Select a hall...</option>
+                    <option value="">Select a hall...</option>
                     {halls.map((hall) => (
-                      <option key={hall.id} value={hall.id} className="text-slate-900">
-                        {hall.name} (Capacity: {hall.capacity}){!hall.isPublished ? " - Not Published" : ""}
+                      <option key={hall.id} value={hall.id}>
+                        {hall.name}
                       </option>
                     ))}
                   </select>
-                  {formData.hallId && halls.find(h => h.id === formData.hallId && !h.isPublished) && (
-                    <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <p className="text-xs font-medium text-amber-800">
-                        This hall is not published. Customers cannot see showtimes in this hall.
-                      </p>
+                </div>
+              </div>
+
+              {selectedMovie && (
+                <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl">
+                  {selectedMovie.posterUrl ? (
+                    <div className="relative h-20 w-14 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                      <Image
+                        src={selectedMovie.posterUrl}
+                        alt={selectedMovie.title}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-20 w-14 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+                      <Film className="w-6 h-6 text-zinc-400" />
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Timing */}
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-slate-700">
-                    Date & Time <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-slate-700">End Time</label>
-                  <div className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-100 text-slate-700 font-bold flex items-center">
-                    {selectedMovie?.duration ? getEndTime() : "Select a movie"}
+                  <div>
+                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{selectedMovie.title}</p>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                       <Clock className="w-3.5 h-3.5" />
+                       <span>{selectedMovie.duration || 0} minutes screening</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              {formData.startTime && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className={`px-2.5 py-1 text-xs font-black uppercase tracking-tight rounded-md shadow-sm ${
-                    isWeekend() ? "bg-orange-600 text-white" : "bg-indigo-600 text-white"
-                  }`}>
-                    {isWeekend() ? "Weekend" : "Weekday"}
-                  </span>
-                  <span className="text-sm text-slate-700 font-bold">
-                    {isWeekend() ? "Weekend pricing logic active" : "Standard weekday rate active"}
-                  </span>
                 </div>
               )}
 
-              {/* Pricing */}
+              <hr className="border-zinc-100 dark:border-zinc-800" />
+
+              {/* Timing Section */}
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-sm font-bold text-slate-700">Base Price ($)</label>
+                <div className="flex items-center gap-2">
+                   <Clock className="w-4 h-4 text-zinc-400" />
+                   <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">Timing</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Start Time</label>
+                    <input
+                      type="datetime-local"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none transition-all dark:[color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Estimated End Time</label>
+                    <div className="w-full h-12 px-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold flex items-center">
+                      {selectedMovie?.duration ? getEndTime() : "--:--"}
+                    </div>
+                  </div>
+                </div>
+
+                {formData.startTime && (
+                  <div className={`p-4 rounded-2xl border flex items-center gap-3 transition-colors ${
+                    isWeekend() 
+                      ? "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30 text-amber-700 dark:text-amber-400" 
+                      : "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                  }`}>
+                    <div className={`p-2 rounded-xl ${isWeekend() ? "bg-amber-100 dark:bg-amber-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"}`}>
+                       {isWeekend() ? <TrendingUp className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                    </div>
+                    <div>
+                       <p className="text-sm font-bold">{isWeekend() ? "Weekend Slot Detected" : "Standard Weekday Slot"}</p>
+                       <p className="text-xs opacity-80">{isWeekend() ? "Weekend multiplier automatically applied." : "Base pricing logic active."}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-zinc-100 dark:border-zinc-800" />
+
+              {/* Pricing Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                   <DollarSign className="w-4 h-4 text-zinc-400" />
+                   <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">Pricing Strategy</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Base Price ($)</label>
                     <input
                       type="number"
                       name="basePrice"
@@ -382,12 +394,12 @@ export default function ShowtimeForm({
                       min="0"
                       value={formData.basePrice}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-black text-lg focus:border-red-500 outline-none"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-bold text-slate-700">Weekend Multiplier</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Weekend Multiplier</label>
                     <input
                       type="number"
                       name="weekendMultiplier"
@@ -396,109 +408,101 @@ export default function ShowtimeForm({
                       max="3"
                       value={formData.weekendMultiplier}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Seat Type Multipliers */}
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                  <p className="text-sm font-bold text-slate-700">Seat Type Multipliers</p>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium text-slate-600">VIP Seats (Premium)</label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          name="vipMultiplier"
-                          step="0.1"
-                          min="1"
-                          max="3"
-                          value={formData.vipMultiplier}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2.5 pr-8 border border-slate-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">x</span>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        ${(parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.vipMultiplier)).toFixed(2)} per ticket
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium text-slate-600">Twinseats (Couple)</label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          name="twinseatMultiplier"
-                          step="0.1"
-                          min="1"
-                          max="3"
-                          value={formData.twinseatMultiplier}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2.5 pr-8 border border-slate-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">x</span>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        ${(parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.twinseatMultiplier)).toFixed(2)} per ticket
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">VIP Seat Multiplier</label>
+                    <input
+                      type="number"
+                      name="vipMultiplier"
+                      step="0.1"
+                      min="1"
+                      value={formData.vipMultiplier}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none"
+                    />
                   </div>
 
-                  {/* Price Preview */}
-                  <div className="pt-3 border-t border-slate-200">
-                    <p className="text-xs font-bold text-slate-500 mb-2">Price Preview ({isWeekend() ? "Weekend" : "Weekday"})</p>
-                    <div className="flex flex-wrap gap-3">
-                      <span className="px-3 py-1.5 bg-blue-100 text-blue-800 text-sm font-bold rounded-lg">
-                        Regular: ${(parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier)).toFixed(2)}
-                      </span>
-                      <span className="px-3 py-1.5 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
-                        VIP: ${(parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.vipMultiplier)).toFixed(2)}
-                      </span>
-                      <span className="px-3 py-1.5 bg-pink-100 text-pink-800 text-sm font-bold rounded-lg">
-                        Twinseat: ${(parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.twinseatMultiplier)).toFixed(2)}
-                      </span>
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Twinseat Multiplier</label>
+                    <input
+                      type="number"
+                      name="twinseatMultiplier"
+                      step="0.1"
+                      min="1"
+                      value={formData.twinseatMultiplier}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none"
+                    />
                   </div>
+                </div>
+
+                {/* Price Preview Card */}
+                <div className="p-6 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl">
+                   <div className="flex items-center gap-2 mb-4">
+                      <TrendingUp className="w-4 h-4 text-zinc-400" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Live Price Preview</span>
+                   </div>
+                   <div className="grid grid-cols-3 gap-4">
+                      <PriceBox 
+                        label="Regular" 
+                        price={parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier)} 
+                      />
+                      <PriceBox 
+                        label="VIP" 
+                        price={parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.vipMultiplier)} 
+                      />
+                      <PriceBox 
+                        label="Twinseat" 
+                        price={parseFloat(formData.basePrice) * parseFloat(formData.weekendMultiplier) * parseFloat(formData.twinseatMultiplier)} 
+                      />
+                   </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-bold text-slate-700">Status</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Availability Status</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none dark:bg-[#09090b]"
                 >
                   {showtimeStatuses.map((s) => (
-                    <option key={s.value} value={s.value} className="text-slate-900">{s.label}</option>
+                    <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Footer Buttons */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 text-sm font-black text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-wider"
+          {/* Form Footer Actions */}
+          <div className="flex justify-end gap-4 pt-8 border-t border-zinc-100 dark:border-zinc-800 items-center">
+             <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">Discard</button>
+             <button 
+              type="submit" 
+              disabled={isLoading || isLoadingData} 
+              className="px-8 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center gap-2"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || isLoadingData}
-              className="px-10 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-indigo-200"
-            >
-              {isLoading ? "Saving..." : showtime ? "Update Showtime" : "Schedule Showtime"}
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isLoading ? "Processing..." : showtime ? "Update Schedule" : "Confirm Schedule"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+}
+
+function PriceBox({ label, price }: { label: string, price: number }) {
+   return (
+      <div className="space-y-1">
+         <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">{label}</p>
+         <p className="text-lg font-black text-zinc-900 dark:text-zinc-50 tabular-nums">${price.toFixed(2)}</p>
+      </div>
+   );
 }

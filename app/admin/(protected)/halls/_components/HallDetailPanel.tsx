@@ -1,8 +1,20 @@
 "use client";
 
+import { 
+  Edit, 
+  Trash2, 
+  Power, 
+  Monitor, 
+  Users, 
+  LayoutGrid, 
+  Calendar,
+  ChevronLeft,
+  Settings2,
+  Info,
+  ExternalLink
+} from "lucide-react";
 import Link from "next/link";
-import { SeatGrid } from "@/components/seats/SeatGrid";
-import { Seat, SeatType, SeatStatus } from "@/types/seat";
+import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 
 interface Hall {
   id: string;
@@ -13,21 +25,7 @@ interface Hall {
   rows: number;
   columns: number;
   isActive: boolean;
-  isPublished: boolean;
   createdAt: string;
-  seats?: Array<{
-    id: string;
-    row: string;
-    column: number;
-    seatNumber: number | null;
-    seatType: string;
-    status: string;
-  }>;
-  rowConfigs?: Array<{
-    startRow: string;
-    endRow: string;
-    seatType: string;
-  }>;
   _count: {
     showtimes: number;
     seats: number;
@@ -44,41 +42,6 @@ interface HallDetailPanelProps {
   onBackToList?: () => void;
 }
 
-const getHallTypeBadge = (type: string) => {
-  const colors: Record<string, string> = {
-    STANDARD: "bg-blue-100 text-blue-800 border-blue-200",
-    VIP: "bg-purple-100 text-purple-800 border-purple-200",
-    Regular: "bg-gray-100 text-gray-800 border-gray-200",
-  };
-  return colors[type] || colors.Regular;
-};
-
-const getScreenTypeBadge = (type: string) => {
-  const colors: Record<string, string> = {
-    STANDARD_2D: "bg-green-100 text-green-800 border-green-200",
-    THREE_D: "bg-red-100 text-red-800 border-red-200",
-    SCREENX: "bg-orange-100 text-orange-800 border-orange-200",
-  };
-  return colors[type] || "bg-gray-100 text-gray-800 border-gray-200";
-};
-
-const formatScreenType = (type: string) => {
-  const labels: Record<string, string> = {
-    STANDARD_2D: "2D",
-    THREE_D: "3D",
-    SCREENX: "ScreenX",
-  };
-  return labels[type] || type;
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
-
 export default function HallDetailPanel({
   hall,
   onEdit,
@@ -88,285 +51,201 @@ export default function HallDetailPanel({
   isMobile = false,
   onBackToList,
 }: HallDetailPanelProps) {
-  const getSeatsForGrid = (hallData: Hall): Seat[] => {
-    if (hallData.seats && hallData.seats.length > 0) {
-      return hallData.seats.map((seat) => ({
-        id: seat.id,
-        hallId: hallData.id,
-        row: seat.row,
-        column: seat.column,
-        number: seat.seatNumber || seat.column + 1,
-        seatNumber: seat.seatNumber,
-        seatType: seat.seatType as SeatType,
-        status: (seat.status?.toUpperCase() as SeatStatus) || "AVAILABLE",
-      }));
-    }
-
-    if (hallData.rowConfigs && hallData.rowConfigs.length > 0) {
-      const seats: Seat[] = [];
-      for (let rowIdx = 0; rowIdx < hallData.rows; rowIdx++) {
-        const row = String.fromCharCode(65 + rowIdx);
-        for (let col = 0; col < hallData.columns; col++) {
-          let seatType: SeatType = "REGULAR";
-          for (const config of hallData.rowConfigs) {
-            const startIdx = config.startRow.charCodeAt(0) - 65;
-            const endIdx = config.endRow.charCodeAt(0) - 65;
-            if (rowIdx >= startIdx && rowIdx <= endIdx) {
-              seatType = config.seatType as SeatType;
-              break;
-            }
-          }
-          seats.push({
-            id: `${hallData.id}-${row}-${col}`,
-            hallId: hallData.id,
-            row,
-            column: col,
-            number: col + 1,
-            seatNumber: col + 1,
-            seatType,
-            status: "AVAILABLE",
-          });
-        }
-      }
-      return seats;
-    }
-
-    const seats: Seat[] = [];
-    for (let rowIdx = 0; rowIdx < hallData.rows; rowIdx++) {
-      const row = String.fromCharCode(65 + rowIdx);
-      for (let col = 0; col < hallData.columns; col++) {
-        seats.push({
-          id: `${hallData.id}-${row}-${col}`,
-          hallId: hallData.id,
-          row,
-          column: col,
-          number: col + 1,
-          seatNumber: col + 1,
-          seatType: "REGULAR",
-          status: "AVAILABLE",
-        });
-      }
-    }
-    return seats;
-  };
-
   if (!hall) {
     return (
-      <div className="h-full flex items-center justify-center p-8 text-gray-500">
-        <div className="text-center">
-          <span className="text-4xl mb-4 block">🎬</span>
-          <p className="text-lg font-medium">Select a hall</p>
-          <p className="text-sm mt-1">Choose a hall from the list to view details</p>
+      <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#09090b]">
+        <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl mb-4">
+           <Building2Icon className="h-12 w-12 text-zinc-300 dark:text-zinc-700" />
         </div>
+        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Hall Selected</h3>
+        <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs">
+          Select a hall from the list to view its configuration and management options.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b bg-white">
-        {isMobile && onBackToList && (
-          <button
-            onClick={onBackToList}
-            className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <svg
-              className="w-4 h-4 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to List
-          </button>
-        )}
-
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{hall.name}</h2>
-            <div className="flex items-center gap-3 mt-2">
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getHallTypeBadge(
-                  hall.hallType
-                )}`}
+    <div className="h-full flex flex-col bg-white dark:bg-[#09090b] transition-colors overflow-y-auto custom-scrollbar">
+      {/* Detail Header */}
+      <div className="px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {isMobile && (
+              <button
+                onClick={onBackToList}
+                className="p-2 -ml-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
               >
-                {hall.hallType}
-              </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getScreenTypeBadge(
-                  hall.screenType
-                )}`}
-              >
-                {formatScreenType(hall.screenType)}
-              </span>
-              <span className="text-sm text-gray-500">
-                Created {formatDate(hall.createdAt)}
-              </span>
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">
+                  {hall.name}
+                </h2>
+                <StatusBadge 
+                  status={hall.isActive ? "Active" : "Inactive"} 
+                  variant={hall.isActive ? "success" : "default"} 
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">
+                   {hall.hallType}
+                </span>
+                <span>•</span>
+                <span>Created {new Date(hall.createdAt).toLocaleDateString()}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
-        {/* Status Section */}
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">Status</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {hall.isActive
-                  ? "Hall is active and available for booking"
-                  : "Hall is currently inactive"}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={onToggleStatus}
               disabled={isUpdating}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                hall.isActive ? "bg-indigo-600" : "bg-gray-200"
-              } ${isUpdating ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`p-2.5 rounded-xl border transition-all ${
+                hall.isActive
+                  ? "border-zinc-200 dark:border-zinc-800 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                  : "border-zinc-200 dark:border-zinc-800 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+              }`}
+              title={hall.isActive ? "Deactivate Hall" : "Activate Hall"}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  hall.isActive ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
+              <Power className="h-5 w-5" />
+            </button>
+            <button
+              onClick={onEdit}
+              className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+              title="Edit Configuration"
+            >
+              <Edit className="h-5 w-5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
+              title="Delete Hall"
+            >
+              <Trash2 className="h-5 w-5" />
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-200 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-blue-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-blue-600 uppercase">Showtimes</p>
-                <p className="text-2xl font-bold text-blue-900">{hall._count.showtimes}</p>
-              </div>
-            </div>
+      {/* Detail Content */}
+      <div className="p-8 space-y-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <DetailStatCard 
+            icon={Monitor} 
+            label="Screen Type" 
+            value={hall.screenType.replace("_", " ")} 
+            color="indigo" 
+          />
+          <DetailStatCard 
+            icon={Users} 
+            label="Total Capacity" 
+            value={`${hall.capacity || hall._count.seats} Seats`} 
+            color="emerald" 
+          />
+          <DetailStatCard 
+            icon={Calendar} 
+            label="Active Showtimes" 
+            value={hall._count.showtimes} 
+            color="rose" 
+          />
+        </div>
+
+        {/* Grid Config Info */}
+        <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Settings2 className="h-5 w-5 text-zinc-400" />
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Grid Configuration</h3>
           </div>
-
-          <div className="bg-linear-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-200 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-green-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-green-600 uppercase">Seats</p>
-                <p className="text-2xl font-bold text-green-900">{hall._count.seats}</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 gap-8">
+             <div className="space-y-1">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Rows</p>
+                <div className="flex items-end gap-1">
+                   <span className="text-3xl font-black text-zinc-900 dark:text-zinc-50">{hall.rows}</span>
+                   <span className="text-sm text-zinc-500 mb-1 font-medium">A to {String.fromCharCode(64 + hall.rows)}</span>
+                </div>
+             </div>
+             <div className="space-y-1">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Columns</p>
+                <div className="flex items-end gap-1">
+                   <span className="text-3xl font-black text-zinc-900 dark:text-zinc-50">{hall.columns}</span>
+                   <span className="text-sm text-zinc-500 mb-1 font-medium">1 to {hall.columns}</span>
+                </div>
+             </div>
           </div>
         </div>
 
-        {/* Seat Preview */}
-        {(hall.seats?.length || hall.rowConfigs) && (
-          <div className="bg-white rounded-xl border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
-                Hall Layout Preview
-              </h3>
-            </div>
+        {/* Action Links */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest px-1">Management Actions</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link 
+              href={`/admin/halls/preview?id=${hall.id}`}
+              className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-red-500/30 hover:bg-red-50/30 dark:hover:bg-red-950/10 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
+                  <LayoutGrid className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
+                </div>
+                <span className="font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">Visual Seat Editor</span>
+              </div>
+              <ExternalLink className="h-4 w-4 text-zinc-300 dark:text-zinc-600 group-hover:text-red-500 transition-colors" />
+            </Link>
 
-            <div className="overflow-x-auto pb-4 scrollbar-hide -mx-2">
-              <SeatGrid
-                seats={getSeatsForGrid(hall)}
-                columns={hall.columns}
-                selectedSeats={new Set()}
-                viewMode="admin"
-                hallName={hall.name}
-                isDragging={false}
-                onSeatClick={() => {}}
-                onMouseDown={() => {}}
-                onMouseEnter={() => {}}
-                onMouseUp={() => {}}
-                onContextMenu={() => {}}
-              />
-            </div>
+            <Link 
+              href={`/admin/showtimes?hallId=${hall.id}`}
+              className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-red-500/30 hover:bg-red-50/30 dark:hover:bg-red-950/10 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
+                  <Calendar className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
+                </div>
+                <span className="font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">View Schedule</span>
+              </div>
+              <ExternalLink className="h-4 w-4 text-zinc-300 dark:text-zinc-600 group-hover:text-red-500 transition-colors" />
+            </Link>
           </div>
+        </div>
+
+        {/* Warning/Info */}
+        {hall._count.showtimes > 0 && (
+           <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl">
+              <Info className="h-5 w-5 text-blue-500 shrink-0" />
+              <p className="text-sm text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
+                This hall has active showtimes. Modifying the grid configuration or seats might affect existing bookings. Proceed with caution.
+              </p>
+           </div>
         )}
-
-        {/* Capacity Info */}
-        <div className="bg-gray-50 rounded-xl p-4 border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-lg shadow-sm">
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Total Capacity</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {hall.capacity}
-                  <span className="text-sm font-normal text-gray-500 ml-1">seats</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex gap-3 pt-4 border-t">
-          <button
-            onClick={onEdit}
-            className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Edit
-          </button>
-          <button
-            onClick={onDelete}
-            className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-          >
-            Delete
-          </button>
-        </div>
       </div>
     </div>
   );
+}
+
+function DetailStatCard({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) {
+  const colors: Record<string, string> = {
+    indigo: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20",
+    emerald: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20",
+    rose: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20",
+  };
+
+  return (
+    <div className="p-5 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl">
+      <div className={`p-2 w-fit rounded-lg mb-3 ${colors[color]}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{label}</p>
+      <p className="text-xl font-black text-zinc-900 dark:text-zinc-50 mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function Building2Icon({ className }: { className?: string }) {
+   return (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+   );
 }

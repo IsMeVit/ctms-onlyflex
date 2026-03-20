@@ -68,18 +68,7 @@ export function useSeatGrid(
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  // Set seats with history tracking
-  const setSeats = useCallback((newSeats: Seat[]) => {
-    setSeatsState(newSeats);
-    pushHistoryState(newSeats);
-  }, []);
-
-  // Push to history
-  const pushHistory = useCallback((newSeats: Seat[]) => {
-    pushHistoryState(newSeats);
-  }, []);
-
-  const pushHistoryState = (newSeats: Seat[]) => {
+  const pushHistoryState = useCallback((newSeats: Seat[]) => {
     setHistory(prev => {
       // Remove any future history if we're in the middle
       const newHistory = prev.slice(0, historyIndex + 1);
@@ -94,7 +83,18 @@ export function useSeatGrid(
       return newHistory;
     });
     setHistoryIndex(prev => Math.min(prev + 1, 49));
-  };
+  }, [historyIndex]);
+
+  // Set seats with history tracking
+  const setSeats = useCallback((newSeats: Seat[]) => {
+    setSeatsState(newSeats);
+    pushHistoryState(newSeats);
+  }, [pushHistoryState]);
+
+  // Push to history
+  const pushHistory = useCallback((newSeats: Seat[]) => {
+    pushHistoryState(newSeats);
+  }, [pushHistoryState]);
 
   // Undo
   const undo = useCallback(() => {
@@ -165,7 +165,7 @@ export function useSeatGrid(
       pushHistoryState(newSeats);
       return newSeats;
     });
-  }, []);
+  }, [pushHistoryState]);
 
   // Bulk update seats
   const bulkUpdateSeats = useCallback((seatIds: string[], updates: Partial<Seat>) => {
@@ -177,7 +177,7 @@ export function useSeatGrid(
       return newSeats;
     });
     setSelectedSeats(new Set()); // Clear selection after bulk update
-  }, []);
+  }, [pushHistoryState]);
 
   // Drag selection handlers
   const startDrag = useCallback((seat: Seat) => {
@@ -229,7 +229,7 @@ export function useSeatGrid(
     });
 
     return true;
-  }, [seats]);
+  }, [seats, pushHistoryState]);
 
   // Delete/convert twinseat
   const deleteLoveseat = useCallback((seatId: string) => {
@@ -246,7 +246,7 @@ export function useSeatGrid(
       pushHistoryState(newSeats);
       return newSeats;
     });
-  }, [seats]);
+  }, [seats, pushHistoryState]);
 
   return {
     seats,

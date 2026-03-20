@@ -8,20 +8,20 @@ interface BaseTextBoxProps extends React.TextareaHTMLAttributes<HTMLTextAreaElem
 
 const BaseTextBox = React.forwardRef<HTMLTextAreaElement, BaseTextBoxProps>(
   ({ label, isRequired, error, className = "", ...props }, ref) => (
-    <div className="mb-4">
+    <div className="w-full">
       {label && (
-        <label className="block mb-2 font-semibold text-zinc-200">
+        <label className="block mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider">
           {label}
           {isRequired && <span className="text-red-500 mx-1">*</span>}
         </label>
       )}
       <textarea
         ref={ref}
-        className={`w-full h-[100px] rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 font-medium font-light placeholder:font-normal placeholder:text-zinc-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 ${className}`}
+        className={`w-full min-h-[120px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] px-4 py-3 text-zinc-900 dark:text-zinc-100 font-medium placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all resize-none ${className}`}
         {...props}
       />
       {error && (
-        <span className="text-sm text-red-500 mt-1 block">{error}</span>
+        <span className="text-sm text-red-500 mt-1.5 block font-medium">{error}</span>
       )}
     </div>
   ),

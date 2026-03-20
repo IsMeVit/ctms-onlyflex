@@ -1,5 +1,6 @@
 import { Prisma } from "@/app/generated/prisma/client";
 import { getRowLabel, rowToIndex } from "./seat-logic";
+export { getRowLabel };
 import { SeatType } from "@/types/seat";
 
 export interface RowConfig {

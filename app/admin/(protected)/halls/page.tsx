@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Plus, AlertCircle, CheckCircle2 } from "lucide-react";
 import HallList from "./_components/HallList";
 import HallDetailPanel from "./_components/HallDetailPanel";
 import HallForm from "./_components/HallForm";
@@ -134,20 +135,11 @@ export default function AdminHallsPage() {
   }, [fetchHalls]);
 
   // Polling for live updates - pause when form is open (editing)
-  const { isPolling, lastUpdated } = usePolling({
+  usePolling({
     interval: 5000,
     enabled: !isFormOpen,
     onPoll: fetchHalls,
   });
-
-  // Format last updated time
-  const getLastUpdatedText = () => {
-    if (!lastUpdated) return "Never";
-    const seconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
-    if (seconds < 5) return "Just now";
-    if (seconds < 60) return `${seconds}s ago`;
-    return `${Math.floor(seconds / 60)}m ago`;
-  };
 
   // Handle hall selection
   const handleSelectHall = (hall: Hall) => {
@@ -293,48 +285,36 @@ export default function AdminHallsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-zinc-50 dark:bg-[#030712] transition-colors">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
-        <div className="flex items-center gap-6">
-          <div>
-            <h1 className="text-2xl font-bold text-black">Hall Management</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {halls.length} {halls.length === 1 ? "hall" : "halls"} configured
-            </p>
-          </div>
-       </div>
+      <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#030712]">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Halls</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
+            {halls.length} {halls.length === 1 ? "hall" : "halls"} configured in your cinema.
+          </p>
+        </div>
         <button
           onClick={() => setIsFormOpen(true)}
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+          className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-red-600/20 active:scale-95"
         >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add Hall
+          <Plus className="h-5 w-5" />
+          <span>Add Hall</span>
         </button>
       </div>
 
       {/* Messages */}
       {(error || successMessage) && (
-        <div className="mx-6 mt-4 space-y-2">
+        <div className="mx-8 mt-6 space-y-2">
           {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg">
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 text-sm rounded-r-xl flex items-center gap-3">
+              <AlertCircle className="h-5 w-5" />
               {error}
             </div>
           )}
           {successMessage && (
-            <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded-r-lg">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500 text-emerald-700 dark:text-emerald-400 text-sm rounded-r-xl flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5" />
               {successMessage}
             </div>
           )}
@@ -342,7 +322,7 @@ export default function AdminHallsPage() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden bg-gray-50">
+      <div className="flex-1 overflow-hidden">
         {isMobile ? (
           // Mobile: Stack layout
           <div className="h-full">
@@ -371,9 +351,9 @@ export default function AdminHallsPage() {
           </div>
         ) : (
           // Desktop: Two-column layout
-          <div className="h-full flex">
+          <div className="h-full flex px-8 py-6 gap-6">
             {/* Left Column: Hall List */}
-            <div className="w-80 border-r bg-white">
+            <div className="w-96 flex flex-col overflow-hidden bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
               <HallList
                 halls={halls}
                 selectedHall={selectedHall}
@@ -386,7 +366,7 @@ export default function AdminHallsPage() {
             </div>
 
             {/* Right Column: Detail Panel */}
-            <div className="flex-1 bg-gray-50">
+            <div className="flex-1 overflow-hidden bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
               <HallDetailPanel
                 hall={selectedHall}
                 onEdit={handleEditClick}

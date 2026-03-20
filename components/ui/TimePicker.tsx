@@ -37,7 +37,7 @@ export function TimePicker({
   useEffect(() => {
     if (value) {
       const [hours, minutes] = value.split(':').map(Number);
-      setSelectedMinute(minutes);
+      setSelectedMinute(minutes); // eslint-disable-line react-hooks/set-state-in-effect
       
       if (format === '12') {
         const hour12 = hours % 12 || 12;

@@ -116,7 +116,7 @@ export async function PUT(
     const updateData: Prisma.ShowtimeUpdateInput = {};
     let movie = existingShowtime.movieId;
     let hall = existingShowtime.hallId;
-    let start = startTime ? new Date(startTime) : existingShowtime.startTime;
+    const start = startTime ? new Date(startTime) : existingShowtime.startTime;
 
     if (movieId) {
       const movieData = await prisma.movie.findUnique({

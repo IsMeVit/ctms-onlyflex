@@ -119,9 +119,11 @@ export async function GET(request: NextRequest) {
 							id: true,
 							seat: {
 								select: {
+									id: true,
 									row: true,
 									seatNumber: true,
 									column: true,
+									seatType: true,
 								},
 							},
 						},
@@ -174,6 +176,7 @@ export async function POST(request: NextRequest) {
 			totalDiscount,
 			finalAmount,
 			bookingStatus,
+			seatIds,
 		} = body;
 
 		if (!userId || !showtimeId || subtotal === undefined || totalDiscount === undefined || finalAmount === undefined) {
@@ -182,6 +185,13 @@ export async function POST(request: NextRequest) {
 					error:
 						"userId, showtimeId, subtotal, totalDiscount, and finalAmount are required",
 				},
+				{ status: 400 }
+			);
+		}
+
+		if (seatIds && !Array.isArray(seatIds)) {
+			return NextResponse.json(
+				{ error: "seatIds must be an array" },
 				{ status: 400 }
 			);
 		}
@@ -205,8 +215,8 @@ export async function POST(request: NextRequest) {
 		}
 
 		const [existingUser, existingShowtime] = await Promise.all([
-			prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-			prisma.showtime.findUnique({ where: { id: showtimeId }, select: { id: true } }),
+			prisma.user.findUnique({ where: { id: userId }, select: { id: true, membershipTier: true } }),
+			prisma.showtime.findUnique({ where: { id: showtimeId }, select: { id: true, basePrice: true, vipMultiplier: true, twinseatMultiplier: true } }),
 		]);
 
 		if (!existingUser) {
@@ -217,36 +227,79 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Showtime not found" }, { status: 404 });
 		}
 
-		const booking = await prisma.booking.create({
-			data: {
-				userId,
-				showtimeId,
-				subtotal: parsedSubtotal,
-				totalDiscount: parsedTotalDiscount,
-				finalAmount: parsedFinalAmount,
-				bookingStatus: bookingStatus || "PENDING",
-			},
+		// Check if seats are already booked
+		if (seatIds && seatIds.length > 0) {
+			const existingTickets = await prisma.ticket.findMany({
+				where: {
+					showtimeId,
+					seatId: { in: seatIds },
+				},
+			});
+
+			if (existingTickets.length > 0) {
+				return NextResponse.json(
+					{ error: "One or more seats are already booked" },
+					{ status: 400 }
+				);
+			}
+		}
+
+		const booking = await prisma.$transaction(async (tx) => {
+			const newBooking = await tx.booking.create({
+				data: {
+					userId,
+					showtimeId,
+					subtotal: parsedSubtotal,
+					totalDiscount: parsedTotalDiscount,
+					finalAmount: parsedFinalAmount,
+					bookingStatus: bookingStatus || "PENDING",
+				},
+			});
+
+			if (seatIds && seatIds.length > 0) {
+				const seats = await tx.seat.findMany({
+					where: { id: { in: seatIds } },
+				});
+
+				const ticketData = seats.map((seat) => {
+					let price = Number(existingShowtime.basePrice);
+					if (seat.seatType === "VIP") price *= Number(existingShowtime.vipMultiplier);
+					if (seat.seatType === "TWINSEAT") price *= Number(existingShowtime.twinseatMultiplier);
+					
+					return {
+						bookingId: newBooking.id,
+						showtimeId,
+						seatId: seat.id,
+						originalPrice: price,
+						discountAmount: 0, // Simplified for admin
+						finalPrice: price,
+						status: "CONFIRMED" as const,
+					};
+				});
+
+				await tx.ticket.createMany({
+					data: ticketData,
+				});
+			}
+
+			return newBooking;
+		});
+
+		const fullBooking = await prisma.booking.findUnique({
+			where: { id: booking.id },
 			include: {
 				user: {
-					select: {
-						id: true,
-						name: true,
-						email: true,
-					},
+					select: { id: true, name: true, email: true },
 				},
 				showtime: {
-					select: {
-						id: true,
-						startTime: true,
-						endTime: true,
-					},
+					select: { id: true, startTime: true, endTime: true },
 				},
 				payment: true,
 				tickets: true,
 			},
 		});
 
-		return NextResponse.json(booking, { status: 201 });
+		return NextResponse.json(fullBooking, { status: 201 });
 	} catch (error) {
 		console.error("Error creating booking:", error);
 		return NextResponse.json(

@@ -44,14 +44,14 @@ async function migrate() {
     console.log('📦 Step 1: Creating backups...');
     
     // Check if backups already exist
-    const backupExists = await prisma.$queryRaw`
+    const backupExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_name = 'halls_backup'
       );
     `;
     
-    if (!(backupExists as any)[0].exists) {
+    if (!backupExists[0].exists) {
       await prisma.$executeRaw`CREATE TABLE IF NOT EXISTS halls_backup AS SELECT * FROM halls`;
       await prisma.$executeRaw`CREATE TABLE IF NOT EXISTS seats_backup AS SELECT * FROM seats`;
       console.log('   ✓ Backups created: halls_backup, seats_backup');

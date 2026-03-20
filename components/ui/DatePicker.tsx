@@ -1,7 +1,7 @@
-// (Removed duplicate and misplaced code. Imports should be at the top, only one DatePicker function should exist.)
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+"use client";
+
+import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 interface DatePickerProps {
   value: string;
@@ -28,13 +28,13 @@ export function DatePicker({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const pickerRef = useRef<HTMLDivElement>(null);
 
-   const handleDateSelect = (date: Date) => {
-     const year = date.getFullYear();
-     const month = String(date.getMonth() + 1).padStart(2, '0');
-     const day = String(date.getDate()).padStart(2, '0');
-     onChange(`${year}-${month}-${day}`);
-     setIsOpen(false);
-   };
+  const handleDateSelect = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    onChange(`${year}-${month}-${day}`);
+    setIsOpen(false);
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -42,9 +42,11 @@ export function DatePicker({
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -52,28 +54,23 @@ export function DatePicker({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  const days = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
-    
-    // Add empty slots for days before the first day of month
+    const result = [];
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
+      result.push(null);
     }
-    
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+      result.push(new Date(year, month, day));
     }
-    
-    return days;
-  };
+    return result;
+  }, [currentMonth]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentMonth(prev => {
@@ -104,64 +101,70 @@ export function DatePicker({
     return date.toDateString() === today.toDateString();
   };
 
-  const days = getDaysInMonth(currentMonth);
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className={`relative ${className}`} ref={pickerRef}>
+    <div className={`relative flex-1 ${className}`} ref={pickerRef}>
       {label && (
-        <label className="block mb-2 font-semibold text-zinc-200">
+        <label className="block mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider">
           {label}
           {isRequired && <span className="text-red-500 mx-1">*</span>}
         </label>
       )}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-left flex items-center justify-between"
-      >
-        <span className={value ? '' : 'text-zinc-500'}>
-          {value ? formatDisplayDate(value) : placeholder}
-        </span>
-        <Calendar className="w-5 h-5 text-zinc-500" />
-      </button>
-      {isOpen && pickerRef.current && createPortal(
-        <div
-          className="bg-[#18181c] border border-zinc-800 rounded-xl shadow-2xl p-4 w-80 z-[100]"
-          style={{
-            position: 'absolute',
-            top: pickerRef.current.getBoundingClientRect().bottom + window.scrollY,
-            left: pickerRef.current.getBoundingClientRect().left + window.scrollX,
-          }}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full h-12 px-4 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 text-sm font-medium text-left flex items-center justify-between focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none"
         >
+          <span className={value ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-600'}>
+            {value ? formatDisplayDate(value) : placeholder}
+          </span>
+          <Calendar className="w-4 h-4 text-zinc-400" />
+        </button>
+        {value && (
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onChange(""); }}
+            className="absolute right-10 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 w-72 animate-in fade-in zoom-in-95 duration-150">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={() => navigateMonth('prev')}
-              className="p-2 rounded-lg transition-colors text-white hover:bg-zinc-700"
+              className="p-1.5 rounded-lg transition-colors text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="font-bold text-white text-lg">
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
               {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </div>
             <button
               type="button"
               onClick={() => navigateMonth('next')}
-              className="p-2 rounded-lg transition-colors text-white hover:bg-zinc-700"
+              className="p-1.5 rounded-lg transition-colors text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
           {/* Week Days */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 mb-2">
             {weekDays.map(day => (
-              <div key={day} className="text-center text-xs font-medium text-zinc-400 py-2">
+              <div key={day} className="text-center text-[10px] font-bold uppercase tracking-tighter text-zinc-400 dark:text-zinc-500 py-1">
                 {day}
               </div>
             ))}
           </div>
+
           {/* Calendar Days */}
           <div className="grid grid-cols-7 gap-1">
             {days.map((date, index) => {
@@ -171,24 +174,31 @@ export function DatePicker({
               const disabled = isDateDisabled(date);
               const selected = isSelectedDate(date);
               const today = isToday(date);
-              let dayClass = "aspect-square rounded-lg text-sm font-medium transition-all text-white";
-              if (disabled) dayClass += " text-zinc-700 cursor-not-allowed";
-              else dayClass += " hover:bg-zinc-700";
-              if (selected) dayClass += " bg-red-500 text-white rounded-xl";
-              if (today && !selected) dayClass += " border border-red-500 text-white";
+              
               return (
                 <button
                   key={date.toISOString()}
                   type="button"
                   onClick={() => !disabled && handleDateSelect(date)}
                   disabled={disabled}
-                  className={dayClass}
+                  className={`
+                    aspect-square rounded-lg text-xs font-semibold transition-all flex items-center justify-center
+                    ${disabled 
+                      ? "text-zinc-200 dark:text-zinc-800 cursor-not-allowed" 
+                      : selected
+                        ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                        : today
+                          ? "border border-red-500 text-red-600 dark:text-red-400"
+                          : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    }
+                  `}
                 >
                   {date.getDate()}
                 </button>
               );
             })}
           </div>
+
           {/* Today Button */}
           <button
             type="button"
@@ -196,12 +206,11 @@ export function DatePicker({
               const today = new Date();
               handleDateSelect(today);
             }}
-            className="w-full mt-4 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm text-white font-medium transition-colors cursor-pointer"
+            className="w-full mt-4 px-4 py-2 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-xs text-zinc-600 dark:text-zinc-300 font-bold transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-800"
           >
-            Today
+            Go to Today
           </button>
-        </div>,
-        document.body
+        </div>
       )}
     </div>
   );

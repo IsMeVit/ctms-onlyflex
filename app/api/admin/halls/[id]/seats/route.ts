@@ -108,7 +108,7 @@ export async function PUT(
     }
 
     // Convert to Seat type for validation
-    const typedSeats: Seat[] = seatsData.map((s: any) => ({
+    const typedSeats: Seat[] = seatsData.map((s: Seat) => ({
       id: s.id || `${id}-${s.row}-${s.column}`,
       hallId: id,
       row: s.row,
@@ -329,7 +329,7 @@ export async function POST(
  * Used when hall is published to block structural modifications
  */
 function detectStructuralChanges(
-  currentSeats: any[],
+  currentSeats: Seat[],
   newSeats: Seat[]
 ): string[] {
   const changes: string[] = [];
