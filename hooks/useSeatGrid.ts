@@ -237,8 +237,25 @@ export function useSeatGrid(
     if (!seat || seat.seatType !== 'TWINSEAT') return;
 
     setSeatsState(prev => {
+      // Find the partner seat using consistent sequential pairing
+      const rowTwinSeats = prev
+        .filter(s => s.row === seat.row && s.seatType === 'TWINSEAT')
+        .sort((a, b) => a.column - b.column);
+      
+      let partnerId: string | null = null;
+      for (let i = 0; i < rowTwinSeats.length; i += 2) {
+        if (rowTwinSeats[i].id === seatId) {
+          partnerId = rowTwinSeats[i+1]?.id || null;
+          break;
+        }
+        if (rowTwinSeats[i+1]?.id === seatId) {
+          partnerId = rowTwinSeats[i].id;
+          break;
+        }
+      }
+
       const newSeats = prev.map(s => {
-        if (s.id === seatId || (s.row === seat.row && s.column === seat.column + 1 && s.seatType === 'TWINSEAT')) {
+        if (s.id === seatId || (partnerId && s.id === partnerId)) {
           return { ...s, seatType: 'REGULAR' as const };
         }
         return s;

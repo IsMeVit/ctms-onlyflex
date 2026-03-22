@@ -8,7 +8,6 @@ import {
   Shield, 
   Award, 
   Calendar, 
-  Ticket, 
   Star,
   Loader2,
   AlertTriangle,
@@ -17,6 +16,7 @@ import {
   Settings,
   Trash2
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import { useEffect, useState, useCallback } from "react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 
@@ -164,7 +164,7 @@ export default function UserDetails({ userId, onClose, onUpdate }: UserDetailsPr
                     <TrendingUp className="w-4 h-4" /> Activity Overview
                  </h4>
                  <div className="grid grid-cols-2 gap-4">
-                    <StatCard icon={Ticket} label="Total Bookings" value={user._count.bookings} />
+                    <StatCard icon={SeatIcon} label="Total Bookings" value={user._count.bookings} />
                     <StatCard icon={Star} label="Reviews Written" value={user._count.reviews} />
                  </div>
               </section>
@@ -209,7 +209,7 @@ export default function UserDetails({ userId, onClose, onUpdate }: UserDetailsPr
                           <div key={b.id} className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl flex items-center justify-between">
                              <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white dark:bg-zinc-800 rounded-xl">
-                                   <Ticket className="w-4 h-4 text-zinc-400" />
+                                   <SeatIcon className="w-4 h-4 text-zinc-400" />
                                 </div>
                                 <div>
                                    <p className="text-sm font-black text-zinc-900 dark:text-zinc-100 truncate max-w-[150px]">{b.showtime.movie.title}</p>

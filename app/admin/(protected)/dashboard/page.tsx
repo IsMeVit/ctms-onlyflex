@@ -4,9 +4,9 @@ import { Pool } from "pg";
 import { 
   Film, 
   Building2, 
-  Calendar, 
-  Ticket 
+  Calendar
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import { StatsCard } from "@/app/admin/_components/StatsCard";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 
@@ -72,7 +72,7 @@ export default async function AdminDashboardPage() {
         <StatsCard
           title="Total Bookings"
           value={totalBookings}
-          icon={Ticket}
+          icon={SeatIcon}
           trend="+4.3%"
           trendUp={true}
           link={{ href: "/admin/bookings", label: "View bookings" }}
@@ -132,7 +132,7 @@ export default async function AdminDashboardPage() {
             </table>
           ) : (
             <div className="px-6 py-12 text-center text-zinc-400 dark:text-zinc-500">
-              <Ticket className="mx-auto h-8 w-8 mb-3 opacity-20" />
+              <SeatIcon size={32} className="mx-auto mb-3 opacity-20" />
               <p>No bookings found yet.</p>
             </div>
           )}

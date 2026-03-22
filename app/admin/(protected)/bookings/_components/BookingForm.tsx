@@ -11,7 +11,6 @@ import {
   Monitor, 
   Calendar, 
   Clock, 
-  Ticket, 
   DollarSign, 
   CheckCircle,
   ChevronRight,
@@ -19,6 +18,7 @@ import {
   Loader2,
   AlertTriangle
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import { Seat } from "@/types/seat";
 import { SeatGrid } from "@/components/seats/SeatGrid";
 
@@ -174,10 +174,38 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
     
     setSelectedSeatIds(prev => {
       const next = new Set(prev);
-      if (next.has(seat.id)) {
-        next.delete(seat.id);
+      
+      if (seat.seatType === 'TWINSEAT') {
+        // Find the partner seat using consistent sequential pairing
+        const rowTwinSeats = seats
+          .filter(s => s.row === seat.row && s.seatType === 'TWINSEAT')
+          .sort((a, b) => a.column - b.column);
+        
+        let partner: Seat | undefined;
+        for (let i = 0; i < rowTwinSeats.length; i += 2) {
+          if (rowTwinSeats[i].id === seat.id) {
+            partner = rowTwinSeats[i+1];
+            break;
+          }
+          if (rowTwinSeats[i+1]?.id === seat.id) {
+            partner = rowTwinSeats[i];
+            break;
+          }
+        }
+
+        if (next.has(seat.id)) {
+          next.delete(seat.id);
+          if (partner) next.delete(partner.id);
+        } else {
+          next.add(seat.id);
+          if (partner) next.add(partner.id);
+        }
       } else {
-        next.add(seat.id);
+        if (next.has(seat.id)) {
+          next.delete(seat.id);
+        } else {
+          next.add(seat.id);
+        }
       }
       return next;
     });
@@ -278,7 +306,7 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
         <div className="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20">
-               <Ticket className="w-6 h-6 text-white" />
+               <SeatIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
@@ -494,7 +522,7 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                   <div className="w-full lg:w-80 space-y-6">
                      <div className="p-6 bg-zinc-50 dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800">
                         <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
-                           <Ticket className="w-4 h-4" /> Reservation Summary
+                           <SeatIcon className="w-4 h-4" /> Reservation Summary
                         </h4>
                         
                         <div className="space-y-4">

@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   XCircle,
-  Ticket,
   Mail,
   Phone,
   Film,
@@ -24,6 +23,7 @@ import {
   ChevronRight,
   Trash2
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import { FilterMore } from "./FilterMore";
 import React from "react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
@@ -275,7 +275,7 @@ export default function AdminBookingsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard title="Total Bookings" value={stats.total} icon={Ticket} />
+        <StatsCard title="Total Bookings" value={stats.total} icon={SeatIcon} />
         <StatsCard title="Confirmed" value={stats.confirmed} icon={CheckCircle} trend="+12%" trendUp={true} />
         <StatsCard title="Pending" value={stats.pending} icon={Clock} />
         <StatsCard title="Cancelled" value={stats.cancelled} icon={XCircle} />
@@ -369,7 +369,7 @@ export default function AdminBookingsPage() {
                 <tr>
                   <td className="px-6 py-16 text-center text-zinc-500" colSpan={7}>
                     <div className="bg-zinc-100 dark:bg-zinc-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Ticket className="h-10 w-10 text-zinc-400" />
+                      <SeatIcon size={40} className="text-zinc-400" />
                     </div>
                     <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">No bookings found</h3>
                     <p className="mt-2 font-medium">Try adjusting your filters.</p>

@@ -9,7 +9,6 @@ import {
   Monitor, 
   Calendar, 
   Clock, 
-  Ticket, 
   DollarSign, 
   CheckCircle,
   AlertTriangle,
@@ -18,6 +17,7 @@ import {
   Receipt,
   Download
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import { useEffect, useState, useCallback } from "react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 
@@ -168,7 +168,7 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
               {/* Tickets/Seats */}
               <section className="space-y-4">
                  <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Ticket className="w-4 h-4" /> Reserved Seats ({booking.tickets.length})
+                    <SeatIcon className="w-4 h-4" /> Reserved Seats ({booking.tickets.length})
                  </h4>
                  <div className="flex flex-wrap gap-2">
                     {booking.tickets.map((t: any) => (

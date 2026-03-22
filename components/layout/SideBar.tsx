@@ -8,16 +8,16 @@ import {
   Film,
   LayoutDashboard,
   LogOut,
-  Ticket,
   Users,
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
   { id: "movies", label: "Movies", icon: Film, href: "/admin/movies" },
   { id: "halls", label: "Halls", icon: Building2, href: "/admin/halls" },
   { id: "showtimes", label: "Showtimes", icon: Calendar, href: "/admin/showtimes" },
-  { id: "bookings", label: "Bookings", icon: Ticket, href: "/admin/bookings" },
+  { id: "bookings", label: "Bookings", icon: SeatIcon, href: "/admin/bookings" },
   { id: "users", label: "Users", icon: Users, href: "/admin/users" },
 ];
 

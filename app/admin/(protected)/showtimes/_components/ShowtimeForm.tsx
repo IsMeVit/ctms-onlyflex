@@ -347,7 +347,7 @@ export default function ShowtimeForm({
                       value={formData.startTime}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none transition-all dark:[color-scheme:dark]"
+                      className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-bold focus:border-red-500 outline-none transition-all dark:scheme-dark"
                     />
                   </div>
 

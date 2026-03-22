@@ -53,7 +53,7 @@ export function SeatTooltip({ seat, viewMode, position, visible }: SeatTooltipPr
         top: position.y - 60,
       }}
     >
-      <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 backdrop-blur-sm bg-opacity-95 min-w-45">
+      <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 backdrop-blur-sm bg-opacity-95 min-w-48">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg font-bold">
             {viewMode === 'admin' 

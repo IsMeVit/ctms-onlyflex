@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SeatGrid } from "@/components/seats/SeatGrid";
+import { SeatSVG } from "@/components/seats/SeatSVG";
 import { Seat } from "@/types/seat";
 import { usePolling } from "@/lib/use-polling";
 import { 
@@ -255,7 +256,7 @@ export default function HallPreviewPage() {
 
             {/* Seat Grid Area */}
             <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-10 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-20" />
+              <div className="absolute top1 left-0 w-full h-1 bg-linear-to-r from-transparent via-red-499 to-transparent opacity-20" />
               
               <div className="mb-12 text-center">
                  <div className="inline-block px-12 py-2 bg-zinc-100 dark:bg-zinc-900 border-x border-b border-zinc-200 dark:border-zinc-800 rounded-b-3xl text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.3em] shadow-inner">
@@ -279,11 +280,23 @@ export default function HallPreviewPage() {
                 />
               </div>
 
-              <div className="mt-12 flex justify-center gap-8 border-t border-zinc-100 dark:border-zinc-800 pt-8">
-                 <LegendItem color="bg-zinc-200 dark:bg-zinc-800" label="Regular" />
-                 <LegendItem color="bg-purple-500/30 border border-purple-500/50" label="VIP" />
-                 <LegendItem color="bg-pink-500/30 border border-pink-500/50" label="Twinseat" />
-                 <LegendItem color="bg-zinc-900 dark:bg-black border border-zinc-700 dark:border-zinc-800" label="Inactive" />
+              <div className="mt-12 flex flex-wrap justify-center gap-8 border-t border-zinc-100 dark:border-zinc-800 pt-8">
+                 <div className="flex items-center gap-3">
+                    <SeatSVG size={20} color="#3B82F6" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Regular</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <SeatSVG size={20} color="#F59E0B" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">VIP</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <SeatSVG size={24} color="#EF4444" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Twinseat</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-zinc-900 dark:bg-black border border-zinc-700 dark:border-zinc-800 rounded-md" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Inactive</span>
+                 </div>
               </div>
             </div>
 

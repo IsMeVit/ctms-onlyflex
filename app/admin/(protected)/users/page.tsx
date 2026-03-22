@@ -14,9 +14,9 @@ import {
   ChevronRight,
   UserPlus,
   Filter,
-  Eye,
-  Ticket
+  Eye
 } from "lucide-react";
+import { SeatIcon } from "@/components/seats/SeatSVG";
 import React from "react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
 import { StatsCard } from "@/app/admin/_components/StatsCard";
@@ -253,7 +253,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4">
                        <div className="flex items-center gap-1.5 font-black text-zinc-900 dark:text-zinc-100 tabular-nums bg-zinc-50 dark:bg-zinc-800 w-fit px-2 py-1 rounded-lg border border-zinc-100 dark:border-zinc-700">
-                          <Ticket className="w-3.5 h-3.5 text-zinc-400" />
+                          <SeatIcon size={14} className="text-zinc-400" />
                           {user._count.bookings}
                        </div>
                     </td>

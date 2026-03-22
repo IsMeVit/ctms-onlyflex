@@ -2,6 +2,8 @@
 
 import React, { memo } from 'react';
 import { Seat } from '@/types/seat';
+import { SeatSVG } from './SeatSVG';
+import { getSeatDisplayLabel } from '@/lib/seat-logic';
 
 interface SeatCellProps {
   seat: Seat;
@@ -15,18 +17,14 @@ interface SeatCellProps {
   onMouseMove: (e: React.MouseEvent) => void;
 }
 
-const getSeatColor = (seatType: string, status: string): string => {
-  if (status === 'INACTIVE') return 'bg-slate-700 border-slate-600';
-  if (status === 'BOOKED') return 'bg-red-500 border-red-600';
-  if (status === 'BLOCKED') return 'bg-orange-500 border-orange-600';
-  
+const getSeatColor = (seatType: string): string => {
   switch (seatType) {
     case 'VIP':
-      return 'bg-amber-500 border-amber-600';
+      return '#F59E0B'; // Amber 500
     case 'TWINSEAT':
-      return 'bg-red-500 border-red-600';
+      return '#EF4444'; // Red 500
     default:
-      return 'bg-blue-500 border-blue-600';
+      return '#3B82F6'; // Blue 500
   }
 };
 
@@ -44,23 +42,21 @@ export const SeatCell = memo(function SeatCell({
   if (seat.status === 'INACTIVE') return null;
 
   const isTwinseat = seat.seatType === 'TWINSEAT';
-  const isDisabled = seat.status === 'BOOKED' || seat.status === 'BLOCKED';
-  const colorClass = getSeatColor(seat.seatType, seat.status);
-  const seatNumber = seat.seatNumber || seat.column + 1;
-  const displayNumber = viewMode === 'admin' 
-    ? `${seat.row}-${seat.column}` 
-    : String(seatNumber).padStart(2, '0');
+  const isBooked = seat.status === 'BOOKED';
+  const isBlocked = seat.status === 'BLOCKED';
+
+  const color = getSeatColor(seat.seatType);
+  const displayNumber = getSeatDisplayLabel(seat, viewMode);
 
   return (
     <div
       className={`
-        ${isTwinseat ? 'col-span-2' : ''}
-        w-8 h-8 flex items-center justify-center
-        ${colorClass}
-        border rounded
-        ${isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-slate-900' : ''}
-        ${!isDisabled ? 'cursor-pointer hover:brightness-110 transition-all' : 'cursor-not-allowed opacity-60'}
-        text-white text-xs font-medium
+        relative flex items-center justify-center transition-all duration-300 group
+        ${isTwinseat ? 'w-25' : 'w-10'} 
+        h-10
+        ${!isBooked && !isBlocked 
+          ? 'cursor-pointer hover:-translate-y-1' 
+          : 'cursor-not-allowed opacity-80'}
       `}
       onClick={onClick}
       onMouseDown={onMouseDown}
@@ -69,7 +65,39 @@ export const SeatCell = memo(function SeatCell({
       onContextMenu={onContextMenu}
       onMouseMove={onMouseMove}
     >
-      {displayNumber}
+      <SeatSVG
+        size={36}
+        isTwinseat={isTwinseat}
+        color={color}
+        isSelected={isSelected}
+        isBooked={isBooked}
+        isBlocked={isBlocked}
+      />
+
+      <span
+        className={`
+          absolute inset-0 flex items-center justify-center pt-2 pointer-events-none
+          text-[9px] font-black uppercase tracking-tighter transition-all duration-300
+          ${
+            isBooked || isBlocked
+              ? 'text-zinc-500/50'
+              : isSelected
+              ? 'text-white scale-110'
+              : 'text-white/90 group-hover:text-white'
+          }
+          ${
+            isSelected
+              ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+              : ''
+          }
+        `}
+      >
+        {displayNumber}
+      </span>
+
+      {!isBooked && !isBlocked && !isSelected && (
+        <div className="absolute inset-0 border-2 border-white/0 group-hover:border-white/20 rounded-xl transition-all pointer-events-none" />
+      )}
     </div>
   );
 });
