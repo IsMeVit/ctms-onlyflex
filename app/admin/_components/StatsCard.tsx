@@ -1,10 +1,9 @@
-import { LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 interface StatsCardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: React.ElementType;
   trend?: string; // e.g., "+12.5%"
   trendUp?: boolean;
   link?: {

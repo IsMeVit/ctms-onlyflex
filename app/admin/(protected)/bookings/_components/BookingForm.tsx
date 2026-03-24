@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   Ticket,
   CreditCard,
-  Smartphone
+  Smartphone,
+  ShieldCheck,
+  Lock
 } from "lucide-react";
 import { SeatIcon } from "@/components/seats/SeatSVG";
 import { Seat } from "@/types/seat";
@@ -57,6 +59,7 @@ type Step = "movie" | "customer" | "seats" | "payment" | "success";
 export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormProps) {
   const [step, setStep] = useState<Step>("movie");
   const [isLoading, setIsLoading] = useState(false);
+  const [processingBank, setProcessingBank] = useState(false);
   const [error, setError] = useState("");
 
   // Data
@@ -70,6 +73,13 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
   const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(new Set());
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [bookedId, setBookedId] = useState<string | null>(null);
+
+  // Card State (Mock)
+  const [cardDetails, setCardDetails] = useState({
+    number: "",
+    expiry: "",
+    cvv: ""
+  });
   
   // Customer
   const [customer, setCustomer] = useState({
@@ -179,6 +189,7 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
       setSelectedSeatIds(new Set());
       setCustomer({ name: "", email: "", phone: "", membershipTier: "NONE" });
       setPaymentMethod("CASH");
+      setCardDetails({ number: "", expiry: "", cvv: "" });
       setBookedId(null);
       setError("");
     }
@@ -269,8 +280,20 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
       return;
     }
 
+    if (paymentMethod === "CARD" && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv)) {
+      setError("Please enter complete card details");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
+
+    // Simulate Bank Processing for Card
+    if (paymentMethod === "CARD") {
+      setProcessingBank(true);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setProcessingBank(false);
+    }
 
     try {
       // 1. Find or create user
@@ -628,7 +651,19 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
 
           {step === "payment" && (
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-300">
-               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               {processingBank ? (
+                 <div className="py-20 flex flex-col items-center justify-center space-y-6">
+                    <div className="relative">
+                       <Loader2 className="w-16 h-16 animate-spin text-red-600" />
+                       <ShieldCheck className="w-6 h-6 text-emerald-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    </div>
+                    <div className="text-center space-y-2">
+                       <h4 className="text-xl font-black text-zinc-900 dark:text-zinc-50">Authorizing Transaction</h4>
+                       <p className="text-sm text-zinc-500 font-medium italic">Connecting to secure banking gateway...</p>
+                    </div>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-6">
                      <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl overflow-hidden">
                         <div className="px-8 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-800/50 flex justify-between items-center">
@@ -650,9 +685,17 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                      </div>
 
                      <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-8 space-y-6">
-                        <h4 className="text-sm font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                           <DollarSign className="w-4 h-4" /> Payment Method
-                        </h4>
+                        <div className="flex items-center justify-between">
+                           <h4 className="text-sm font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" /> Payment Method
+                           </h4>
+                           {paymentMethod === "CARD" && (
+                             <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                <Lock className="w-3 h-3" /> Secure Gateway
+                             </div>
+                           )}
+                        </div>
+                        
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                            <PaymentMethodCard 
                               active={paymentMethod === "CASH"} 
@@ -679,6 +722,53 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                               label="Wallet" 
                            />
                         </div>
+
+                        {/* Card Details Form */}
+                        {paymentMethod === "CARD" && (
+                          <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                             <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Card Number</label>
+                                <div className="relative">
+                                   <input 
+                                     type="text" 
+                                     maxLength={19}
+                                     value={cardDetails.number}
+                                     onChange={(e) => setCardDetails({...cardDetails, number: e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim()})}
+                                     placeholder="0000 0000 0000 0000"
+                                     className="w-full h-12 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 font-mono text-sm outline-none focus:border-red-500 transition-colors"
+                                   />
+                                   <CreditCard className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                                </div>
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Expiry Date</label>
+                                   <input 
+                                     type="text" 
+                                     maxLength={5}
+                                     value={cardDetails.expiry}
+                                     onChange={(e) => setCardDetails({...cardDetails, expiry: e.target.value.replace(/\D/g, '').replace(/(.{2})/g, '$1/').replace(/\/$/, '')})}
+                                     placeholder="MM/YY"
+                                     className="w-full h-12 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 font-mono text-sm outline-none focus:border-red-500 transition-colors"
+                                   />
+                                </div>
+                                <div className="space-y-1.5">
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">CVV</label>
+                                   <div className="relative">
+                                      <input 
+                                        type="password" 
+                                        maxLength={3}
+                                        value={cardDetails.cvv}
+                                        onChange={(e) => setCardDetails({...cardDetails, cvv: e.target.value.replace(/\D/g, '')})}
+                                        placeholder="***"
+                                        className="w-full h-12 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 font-mono text-sm outline-none focus:border-red-500 transition-colors"
+                                      />
+                                      <Lock className="w-3.5 h-3.5 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+                        )}
                      </div>
                   </div>
 
@@ -729,6 +819,7 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                      </div>
                   </div>
                </div>
+               )}
             </div>
           )}
 
@@ -782,8 +873,13 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Total Paid</p>
                               <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tabular-nums">${pricingSummary.total.toFixed(2)}</p>
                            </div>
-                           <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-[10px] font-black text-zinc-500 uppercase">
-                              {paymentMethod} Payment
+                           <div className="text-right space-y-1">
+                              <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-[10px] font-black text-zinc-500 uppercase inline-block">
+                                 {paymentMethod} Payment
+                              </div>
+                              {paymentMethod === "CARD" && (
+                                <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-tighter">Auth: {Math.random().toString(36).slice(-8).toUpperCase()}</p>
+                              )}
                            </div>
                         </div>
                      </div>

@@ -352,7 +352,7 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Bookings Table */}
-      <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-4xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
@@ -404,17 +404,17 @@ export default function AdminBookingsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <p className="font-bold text-zinc-900 dark:text-zinc-200 truncate max-w-[150px]">
+                        <p className="font-bold text-zinc-900 dark:text-zinc-200 truncate max-w-37.5">
                           {booking.user.name || "Anonymous User"}
                         </p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-37.5">
                           {booking.user.email}
                         </p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <p className="font-bold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 truncate max-w-[180px]">
+                        <p className="font-bold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 truncate max-w-45">
                           <Film className="h-3.5 w-3.5 text-zinc-400" />
                           {booking.showtime.movie.title}
                         </p>
@@ -499,7 +499,7 @@ export default function AdminBookingsPage() {
       {/* Booking Details Drawer */}
       {selectedBookingId && (
         <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] animate-in fade-in duration-300" onClick={() => setSelectedBookingId(null)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-55 animate-in fade-in duration-300" onClick={() => setSelectedBookingId(null)} />
           <BookingDetails 
             bookingId={selectedBookingId} 
             onClose={() => setSelectedBookingId(null)} 
