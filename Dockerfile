@@ -1,27 +1,29 @@
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
+# 1. Install dependencies
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Copy lockfiles AND the prisma schema first
 COPY package.json package-lock.json ./
-RUN npm ci
+COPY prisma ./prisma/ 
 
-# Rebuild the source code only when needed
+# Install dependencies and generate Prisma Client immediately
+# This ensures the client is baked into the 'deps' layer
+RUN npm ci && npx prisma generate
+
+# 2. Rebuild the source code
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
 # Build Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production image, copy all the files and run next
+# 3. Production image
 FROM base AS runner
 WORKDIR /app
 
@@ -31,17 +33,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy public folder if it exists
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
+# Set permissions
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
+# Leverage standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# We don't need to manually copy .prisma anymore because it's inside standalone/node_modules
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x docker-entrypoint.sh
@@ -49,7 +52,6 @@ RUN chmod +x docker-entrypoint.sh
 USER nextjs
 
 EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
