@@ -71,7 +71,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, hallType, screenType, capacity, isActive, isPublished, rows, columns, rowConfigs } = body;
+    const { name, hallType, screenType, isActive, isPublished, rows, columns, rowConfigs } = body;
 
     // Check if hall exists
     const existingHall = await prisma.hall.findUnique({
@@ -86,13 +86,6 @@ export async function PUT(
     if (name !== undefined && !name.trim()) {
       return NextResponse.json(
         { error: "Hall name is required" },
-        { status: 400 }
-      );
-    }
-
-    if (capacity !== undefined && capacity < 1) {
-      return NextResponse.json(
-        { error: "Valid capacity is required" },
         { status: 400 }
       );
     }
@@ -114,6 +107,7 @@ export async function PUT(
     // Determine rows and columns (use existing if not provided)
     const newRows = rows || existingHall.rows;
     const newColumns = columns || existingHall.columns;
+    const newCapacity = newRows * newColumns;
 
     // Use transaction to update hall and regenerate seats if rowConfigs provided
     const hall = await prisma.$transaction(async (tx) => {
@@ -124,7 +118,7 @@ export async function PUT(
           ...(name && { name: name.trim() }),
           ...(hallType && { hallType }),
           ...(screenType && { screenType }),
-          ...(capacity && { capacity: parseInt(capacity) }),
+          capacity: newCapacity,
           ...(isActive !== undefined && { isActive }),
           ...(isPublished !== undefined && { isPublished }),
           ...(rows && { rows }),

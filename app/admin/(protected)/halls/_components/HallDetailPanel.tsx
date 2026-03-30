@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+import { getRowLabel } from "@/lib/seat-logic";
 
 interface Hall {
   id: string;
@@ -165,7 +166,7 @@ export default function HallDetailPanel({
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Rows</p>
                 <div className="flex items-end gap-1">
                    <span className="text-3xl font-black text-zinc-900 dark:text-zinc-50">{hall.rows}</span>
-                   <span className="text-sm text-zinc-500 mb-1 font-medium">A to {String.fromCharCode(64 + hall.rows)}</span>
+                   <span className="text-sm text-zinc-500 mb-1 font-medium">A to {getRowLabel(hall.rows - 1)}</span>
                 </div>
              </div>
              <div className="space-y-1">

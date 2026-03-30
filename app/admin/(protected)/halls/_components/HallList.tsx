@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, Filter, Monitor, Building2 } from "lucide-react";
+import { hallTypeOptions } from "@/lib/hall-utils";
 
 interface Hall {
   id: string;
@@ -28,9 +29,7 @@ interface HallListProps {
 
 const hallTypes = [
   { value: "all", label: "All Types" },
-  { value: "REGULAR", label: "Regular" },
-  { value: "PREMIUM", label: "Premium" },
-  { value: "VIP", label: "VIP" },
+  ...hallTypeOptions,
 ];
 
 export default function HallList({

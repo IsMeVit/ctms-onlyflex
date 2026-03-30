@@ -15,7 +15,8 @@ import {
   Trash2,
   Plus
 } from "lucide-react";
-import { RowConfig, getRowLabel } from "@/lib/hall-utils";
+import { RowConfig, getRowLabel, hallTypeOptions, screenTypeOptions, seatTypeOptions, validateRowConfigs } from "@/lib/hall-utils";
+import { AlertCircle } from "lucide-react";
 
 interface Hall {
   id: string;
@@ -47,17 +48,17 @@ interface HallFormProps {
   isLoading: boolean;
 }
 
-const hallTypes = ["REGULAR", "PREMIUM", "VIP"];
-const screenTypes = ["STANDARD_2D", "IMAX", "DOLBY_ATMOS", "GOLD_CLASS"];
+const hallTypes = hallTypeOptions;
+const screenTypes = screenTypeOptions;
 
 const initialFormData: HallFormData = {
   name: "",
-  hallType: "REGULAR",
+  hallType: "STANDARD",
   screenType: "STANDARD_2D",
   rows: 8,
   columns: 12,
   isActive: true,
-  rowConfigs: [{ startRow: "A", endRow: "H", seatType: "REGULAR" }],
+  rowConfigs: [{ startRow: "A", endRow: getRowLabel(8 - 1), seatType: "REGULAR" }],
 };
 
 export default function HallForm({
@@ -68,6 +69,7 @@ export default function HallForm({
   isLoading,
 }: HallFormProps) {
   const [formData, setFormData] = useState<HallFormData>(initialFormData);
+  const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -112,10 +114,40 @@ export default function HallForm({
   };
 
   const addRowConfig = () => {
+    const lastConfig = formData.rowConfigs[formData.rowConfigs.length - 1];
+    const lastEndIdx = lastConfig
+      ? lastConfig.endRow.charCodeAt(0) - 64
+      : -1;
+    const nextStart = String.fromCharCode(65 + Math.min(lastEndIdx, formData.rows - 1));
+    const nextEnd = String.fromCharCode(65 + Math.min(lastEndIdx + 1, formData.rows - 1));
     setFormData({
       ...formData,
-      rowConfigs: [...formData.rowConfigs, { startRow: "A", endRow: "A", seatType: "REGULAR" }],
+      rowConfigs: [...formData.rowConfigs, { startRow: nextStart, endRow: nextEnd, seatType: "REGULAR" }],
     });
+  };
+
+  const handleSubmit = () => {
+    setValidationError("");
+
+    if (!formData.name.trim()) {
+      setValidationError("Hall name is required.");
+      return;
+    }
+
+    if (formData.rows < 1 || formData.columns < 1) {
+      setValidationError("Rows and columns must be at least 1.");
+      return;
+    }
+
+    if (formData.rowConfigs.length > 0) {
+      const error = validateRowConfigs(formData.rowConfigs, formData.rows);
+      if (error) {
+        setValidationError(error);
+        return;
+      }
+    }
+
+    onSubmit(formData);
   };
 
   const removeRowConfig = (index: number) => {
@@ -143,9 +175,15 @@ export default function HallForm({
         </div>
 
         <form 
-          onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} 
+          onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} 
           className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar"
         >
+          {validationError && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 text-sm rounded-r-xl flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              {validationError}
+            </div>
+          )}
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5 md:col-span-2">
@@ -174,7 +212,7 @@ export default function HallForm({
                 className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium focus:border-red-500 outline-none dark:bg-[#09090b]"
               >
                 {screenTypes.map(type => (
-                  <option key={type} value={type}>{type.replace("_", " ")}</option>
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
             </div>
@@ -190,7 +228,7 @@ export default function HallForm({
                 className="w-full px-4 py-2.5 bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium focus:border-red-500 outline-none dark:bg-[#09090b]"
               >
                 {hallTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
             </div>
@@ -285,15 +323,15 @@ export default function HallForm({
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-zinc-400 uppercase">Seat Type</label>
-                      <select 
-                        value={config.seatType} 
-                        onChange={(e) => handleRowConfigChange(index, "seatType", e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-bold"
-                      >
-                        <option value="REGULAR">REGULAR</option>
-                        <option value="VIP">VIP</option>
-                        <option value="TWINSEAT">TWINSEAT</option>
-                      </select>
+                        <select 
+                          value={config.seatType} 
+                          onChange={(e) => handleRowConfigChange(index, "seatType", e.target.value)}
+                          className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-bold"
+                        >
+                          {seatTypeOptions.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
                     </div>
                   </div>
                   <button 

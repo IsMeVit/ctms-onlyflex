@@ -97,9 +97,13 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
       if (response.ok) {
         const data = await response.json();
         setMovies(data.movies || []);
+      } else {
+        const data = await response.json().catch(() => null);
+        setError(data?.error || "Failed to fetch movies");
       }
     } catch (err) {
       console.error("Error fetching movies:", err);
+      setError("Failed to fetch movies");
     }
   }, []);
 
@@ -426,7 +430,7 @@ export default function BookingForm({ isOpen, onClose, onSuccess }: BookingFormP
                         <button
                           key={movie.id}
                           onClick={() => handleMovieSelect(movie)}
-                          className={`group relative aspect-2/3ounded-2xl overflow-hidden border-2 transition-all ${
+                          className={`group relative aspect-2/3 rounded-2xl overflow-hidden border-2 transition-all ${
                             selectedMovie?.id === movie.id 
                               ? "border-red-600 ring-4 ring-red-600/10 shadow-xl" 
                               : "border-transparent hover:border-zinc-300 dark:hover:border-zinc-700"

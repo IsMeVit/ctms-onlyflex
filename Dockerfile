@@ -43,10 +43,18 @@ RUN chown nextjs:nodejs .next
 # Leverage standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# We don't need to manually copy .prisma anymore because it's inside standalone/node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
+# Copy prisma schema, config, and migrations for runtime migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+
+# Install prisma CLI for migrate deploy at runtime
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm install --no-save prisma
+RUN chown -R nextjs:nodejs node_modules
+
+# Copy entrypoint last
+COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
 
 USER nextjs

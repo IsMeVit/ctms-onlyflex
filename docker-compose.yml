@@ -1,20 +1,16 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:16-alpine
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Admin234
-      POSTGRES_DB: moviedb
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-moviedb}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d moviedb"]
-      interval: 5s # Faster checks for development
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-moviedb}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -22,20 +18,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
-    # Ensure the app waits for the DB healthcheck to pass
     depends_on:
       db:
         condition: service_healthy
     environment:
-      # Use the service name 'db' as the hostname
-      DATABASE_URL: "postgresql://postgres:Admin234@db:5432/moviedb?schema=public"
-      AUTH_SECRET: "your-secret-key-change-this-in-production"
-      # Changed to your intended production/container URL
-      NEXTAUTH_URL: "http://localhost:3000" 
-      AUTH_URL: "http://localhost:3000"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-moviedb}?schema=public"
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      NEXTAUTH_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_URL: ${APP_URL:-http://localhost:3000}
 
 volumes:
   postgres_data:
