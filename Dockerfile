@@ -1,8 +1,14 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # 1. Install dependencies
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    gcc \
+    g++ \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy lockfiles AND the prisma schema first
