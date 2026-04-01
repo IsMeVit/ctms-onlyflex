@@ -31,7 +31,7 @@ const CinematicBackground: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [orbs, setOrbs] = useState<Orb[]>([]);
 
-  const bgImages = ["/backgound-images/main.avif"];
+  const bgImages = ["/background-images/main.svg"];
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

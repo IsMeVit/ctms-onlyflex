@@ -5,9 +5,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-} as any; // Add 'as any' here
+} satisfies NextConfig;
 
 export default nextConfig;
