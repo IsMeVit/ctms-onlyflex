@@ -11,15 +11,6 @@ const prisma = new PrismaClient({ adapter });
 // GET /api/admin/movies - List all movies
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    
-    if (!session || session.user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
@@ -49,6 +40,34 @@ export async function GET(request: NextRequest) {
         include: {
           genres: {
             select: { id: true, name: true },
+          },
+          showtimes: {
+            where: {
+              status: "ACTIVE",
+            },
+            orderBy: {
+              startTime: "asc",
+            },
+            include: {
+              hall: {
+                select: {
+                  id: true,
+                  name: true,
+                  hallType: true,
+                  capacity: true,
+                  _count: {
+                    select: {
+                      seats: true,
+                    },
+                  },
+                },
+              },
+              _count: {
+                select: {
+                  tickets: true,
+                },
+              },
+            },
           },
           _count: {
             select: { showtimes: true },

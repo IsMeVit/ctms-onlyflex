@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { PrismaClient, Prisma } from "@/app/generated/prisma/client";
+import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -14,21 +14,40 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    
-    if (!session || session.user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
     const { id } = await params;
     const movie = await prisma.movie.findUnique({
       where: { id },
       include: {
         genres: {
           select: { id: true, name: true },
+        },
+        showtimes: {
+          where: {
+            status: "ACTIVE",
+          },
+          orderBy: {
+            startTime: "asc",
+          },
+          include: {
+            hall: {
+              select: {
+                id: true,
+                name: true,
+                hallType: true,
+                capacity: true,
+                _count: {
+                  select: {
+                    seats: true,
+                  },
+                },
+              },
+            },
+            _count: {
+              select: {
+                tickets: true,
+              },
+            },
+          },
         },
       },
     });

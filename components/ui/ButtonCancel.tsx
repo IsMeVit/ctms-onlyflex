@@ -4,7 +4,7 @@ import { buttonVariants } from "./ButtonAddNew";
 
 interface ButtonCancelProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children?: React.ReactNode;
-  size?: "default" | "sm" | "lg" | "icon";
+  size?: "default" | "sm" | "lg" | "xl" | "2xl" | "icon";
 }
 
 const ButtonCancel: React.FC<ButtonCancelProps> = ({

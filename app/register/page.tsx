@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import bcrypt from "bcryptjs";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,15 +30,13 @@ export default function RegisterPage() {
     }
 
     try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           email,
-          password: hashedPassword,
+          password,
         }),
       });
 
@@ -51,9 +50,9 @@ export default function RegisterPage() {
 
         if (result?.error) {
           setError("Account created but auto-login failed. Please sign in manually.");
-          router.push("/login");
+          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         } else {
-          router.push("/dashboard");
+          router.push(callbackUrl);
           router.refresh();
         }
       } else {

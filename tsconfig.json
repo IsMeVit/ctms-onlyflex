@@ -20,7 +20,12 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "next-auth": ["./node_modules/next-auth"],
+      "next-auth/react": ["./node_modules/next-auth/react"],
+      "next-auth/jwt": ["./node_modules/next-auth/jwt"],
+      "@/*": ["./*"],
+      "@lib/*": ["lib/*"],
+      "@/lib/*": ["lib/*"]
     }
   },
   "include": [
