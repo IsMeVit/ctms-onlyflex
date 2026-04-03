@@ -5,6 +5,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "external-content.duckduckgo.com",
+      },
+    ],
+  },
 } satisfies NextConfig;
 
 export default nextConfig;
