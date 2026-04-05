@@ -1,36 +1,183 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CTMS - Cinema Ticketing Management System
 
-## Getting Started
+A full-stack cinema booking system built with Next.js 16, TypeScript, Tailwind CSS, and Prisma.
 
-First, run the development server:
+## Features
+
+- Movie management
+- Showtime scheduling
+- Seat booking system
+- User authentication (NextAuth.js)
+- Admin dashboard
+- Customer booking flow
+
+## Prerequisites
+
+- Docker installed on server
+- SSH access to server
+- Git
+
+## Quick Deploy
+
+### 1. SSH into Server
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+ssh vit@86.48.3.217
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Navigate to Project
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd /home/vit/ctms-onlyflex
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Configure Environment
 
-## Learn More
+```bash
+cp .env.example .env
+nano .env
+```
 
-To learn more about Next.js, take a look at the following resources:
+Edit `.env` with your settings:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+POSTGRES_PASSWORD=your_strong_password
+AUTH_SECRET=run_locally: openssl rand -base64 32
+APP_URL=http://86.48.3.217:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Configure Firewall
 
-## Deploy on Vercel
+```bash
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw deny 5432/tcp
+sudo ufw enable
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5. Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose up -d --build
+```
+
+### 6. Run Database Migrations
+
+```bash
+docker compose exec app npx prisma migrate deploy
+```
+
+### 7. Access Application
+
+```
+http://86.48.3.217:3000
+```
+
+## Troubleshooting
+
+### Check Container Status
+
+```bash
+docker compose ps
+```
+
+### View Logs
+
+```bash
+docker compose logs -f        # All logs
+docker compose logs -f app    # App logs only
+docker compose logs -f db     # Database logs
+```
+
+### Restart Services
+
+```bash
+docker compose restart        # Restart all
+docker compose restart app    # Restart app only
+```
+
+### Rebuild and Redeploy
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+### Stop Services
+
+```bash
+docker compose down           # Stop but keep data
+docker compose down -v        # Stop and delete data (WARNING!)
+```
+
+### Access Database
+
+```bash
+docker compose exec db psql -U postgres -d moviedb
+```
+
+## Future: Adding HTTPS & Domain
+
+### 1. Buy a Domain
+
+Purchase from providers like:
+- Namecheap
+- GoDaddy
+- Google Domains
+
+### 2. Point Domain to Server
+
+Add DNS A record:
+- **Host:** @ (or subdomain)
+- **Value:** 86.48.3.217
+
+### 3. Install SSL Certificate
+
+```bash
+apt update
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d yourdomain.com
+```
+
+### 4. Update APP_URL
+
+Edit `.env`:
+```
+APP_URL=https://yourdomain.com
+```
+
+Then redeploy:
+```bash
+docker compose up -d --build
+```
+
+## Admin Access
+
+1. Visit `http://86.48.3.217/admin/login`
+2. Default admin credentials (seeded):
+   - Email: `admin@ctms.com`
+   - Password: `admin123`
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `POSTGRES_USER` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `POSTGRES_DB` | Database name |
+| `DATABASE_URL` | Full connection string |
+| `AUTH_SECRET` | NextAuth session secret |
+| `APP_URL` | Application URL |
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, React 19, Tailwind CSS v4
+- **Backend:** Next.js API Routes, Prisma ORM
+- **Database:** PostgreSQL 16
+- **Auth:** NextAuth.js v5
+- **Container:** Docker, Docker Compose
+
+## License
+
+Private - All rights reserved

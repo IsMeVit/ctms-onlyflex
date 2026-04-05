@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
@@ -41,7 +41,6 @@ export default function RegisterPage() {
       });
 
       if (response.ok) {
-        // Auto-login after successful registration
         const result = await signIn("credentials", {
           email,
           password,
@@ -59,7 +58,7 @@ export default function RegisterPage() {
         const data = await response.json();
         setError(data.error || "Failed to create account");
       }
-    } catch (error) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -159,5 +158,17 @@ export default function RegisterPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-zinc-400">Loading...</div>
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }

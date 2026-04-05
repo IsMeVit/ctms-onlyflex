@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ChevronRight, Film, Calendar, MapPin, Clock, Users, CreditCard, Check } from 'lucide-react';
 import { SeatGrid } from '@/components/seats/SeatGrid';
@@ -51,12 +51,12 @@ interface MovieShowtime {
   type: string;
 }
 
-interface BookingPageProps {
+interface BookingContentProps {
   showtime?: MovieShowtime;
   onBack?: () => void;
 }
 
-function BookingPage({ showtime, onBack }: BookingPageProps) {
+function BookingContent({ showtime, onBack }: BookingContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -480,5 +480,15 @@ function BookingPage({ showtime, onBack }: BookingPageProps) {
   );
 }
 
-export { BookingPage };
-export default BookingPage;
+export { BookingContent };
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-zinc-400">Loading booking...</div>
+      </div>
+    }>
+      <BookingContent />
+    </Suspense>
+  );
+}

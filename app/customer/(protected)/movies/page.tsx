@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import BaseMovieCard from "@/components/layout/BaseMovieCard";
@@ -16,7 +16,7 @@ const sortOptions = [
   { value: "duration", label: "Sort by Duration" },
 ];
 
-export default function ViewAllMoviesPage() {
+function MoviesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +53,6 @@ export default function ViewAllMoviesPage() {
       return matchesSearch && matchesGenre && matchesCertification && matchesLanguage;
     });
 
-    // Sort movies
     return [...filtered].sort((a, b) => {
       if (sortBy === 'rating') return b.rating - a.rating;
       if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -83,16 +82,13 @@ export default function ViewAllMoviesPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-6 py-28">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-5xl font-bold mb-4">All Movies</h1>
           <p className="text-zinc-400 text-lg">Browse our complete collection of films</p>
         </div>
 
-        {/* Search and Filter Bar */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-stretch md:justify-between gap-4">
-            {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
@@ -112,7 +108,6 @@ export default function ViewAllMoviesPage() {
               )}
             </div>
 
-            {/* Filter Toggle Button (Mobile) */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="md:hidden flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-red-500 transition-all"
@@ -126,7 +121,6 @@ export default function ViewAllMoviesPage() {
               )}
             </button>
 
-            {/* Sort */}
             <div className="w-full md:w-56">
               <CustomDropdown
                 value={sortBy}
@@ -137,7 +131,6 @@ export default function ViewAllMoviesPage() {
             </div>
           </div>
 
-          {/* Filter Options */}
           <div
             className={`${
               showFilters ? "flex" : "hidden md:flex"
@@ -180,7 +173,6 @@ export default function ViewAllMoviesPage() {
           </div>
         </div>
 
-        {/* Results Count */}
         <div className="mb-6 flex items-center justify-between">
           <p className="text-zinc-400">
             Showing <span className="text-white font-semibold">{filteredAndSortedMovies.length}</span> {filteredAndSortedMovies.length === 1 ? 'movie' : 'movies'}
@@ -192,7 +184,6 @@ export default function ViewAllMoviesPage() {
           )}
         </div>
 
-        {/* Movies Grid */}
         {isLoading ? (
           <div className="text-center py-20 text-zinc-400">Loading movies...</div>
         ) : error ? (
@@ -235,5 +226,17 @@ export default function ViewAllMoviesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ViewAllMoviesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-zinc-400">Loading movies...</div>
+      </div>
+    }>
+      <MoviesContent />
+    </Suspense>
   );
 }
