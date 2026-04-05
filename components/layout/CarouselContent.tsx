@@ -70,11 +70,15 @@ export default function CarouselContent() {
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden pt-24">
       <div className="absolute inset-0">
-        <img
-          src={activeMovie.backdropUrl || activeMovie.posterUrl}
-          alt={activeMovie.title}
-          className="w-full h-full object-cover"
-        />
+        {activeMovie.backdropUrl || activeMovie.posterUrl ? (
+          <img
+            src={activeMovie.backdropUrl || activeMovie.posterUrl}
+            alt={activeMovie.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
       </div>

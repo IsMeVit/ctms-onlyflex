@@ -16,6 +16,8 @@ interface MovieData {
   rating: number;
   status: "RELEASED" | "ANNOUNCED" | "POST_PRODUCTION";
   genreNames: string[];
+  posterUrl?: string;
+  backdropUrl?: string;
 }
 
 interface HallData {
@@ -44,6 +46,8 @@ const movies: MovieData[] = [
     rating: 8.5,
     status: "RELEASED",
     genreNames: ["Sci-Fi", "Action"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9T9J4RwqIdXqzKQe.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/1E5baAaEse26fej7uHcjOgEE2k2.jpg",
   },
   {
     title: "The Marvels",
@@ -53,6 +57,8 @@ const movies: MovieData[] = [
     rating: 6.0,
     status: "RELEASED",
     genreNames: ["Action", "Sci-Fi"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/tBaXZcwqYVXOoKlCabR2eYqNpq0.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/uqE4yH5cFjJ8QTF5O2sqaL2pFNp.jpg",
   },
   {
     title: "Oppenheimer",
@@ -62,6 +68,8 @@ const movies: MovieData[] = [
     rating: 8.4,
     status: "RELEASED",
     genreNames: ["Drama", "Action"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
   },
   {
     title: "Barbie",
@@ -71,6 +79,8 @@ const movies: MovieData[] = [
     rating: 7.0,
     status: "RELEASED",
     genreNames: ["Comedy", "Action"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/nHf61UzkfFno5X1ofIhugBTusqV.jpg",
   },
   {
     title: "The Dark Knight",
@@ -80,6 +90,8 @@ const movies: MovieData[] = [
     rating: 9.0,
     status: "RELEASED",
     genreNames: ["Action", "Drama"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg",
   },
   {
     title: "Inception",
@@ -89,6 +101,8 @@ const movies: MovieData[] = [
     rating: 8.8,
     status: "RELEASED",
     genreNames: ["Sci-Fi", "Action"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
   },
   {
     title: "Interstellar",
@@ -98,6 +112,8 @@ const movies: MovieData[] = [
     rating: 8.6,
     status: "RELEASED",
     genreNames: ["Sci-Fi", "Drama"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/gEU2QniL6E8ahDaPCb6JuWyVDF.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
   },
   {
     title: "The Conjuring",
@@ -107,6 +123,8 @@ const movies: MovieData[] = [
     rating: 7.5,
     status: "RELEASED",
     genreNames: ["Horror"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/wVYREutTvI2tmxr6ujrHT704wGF.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/wZ2pXUcHXh9nWrQJkjdUDXU0k3l.jpg",
   },
   {
     title: "La La Land",
@@ -116,6 +134,8 @@ const movies: MovieData[] = [
     rating: 8.0,
     status: "RELEASED",
     genreNames: ["Romance", "Drama"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/fhP2dU3rW5jEtDZYYa3pTk4qqqZ.jpg",
   },
   {
     title: "Avatar: The Way of Water",
@@ -125,6 +145,8 @@ const movies: MovieData[] = [
     rating: 7.6,
     status: "RELEASED",
     genreNames: ["Sci-Fi", "Action"],
+    posterUrl: "https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg",
+    backdropUrl: "https://image.tmdb.org/t/p/original/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg",
   },
 ];
 
@@ -237,7 +259,10 @@ async function seedData() {
       movies.map(async (movie) => {
         const created = await prisma.movie.upsert({
           where: { slug: movie.slug },
-          update: {},
+          update: {
+            posterUrl: movie.posterUrl,
+            backdropUrl: movie.backdropUrl,
+          },
           create: {
             title: movie.title,
             slug: movie.slug,
@@ -246,6 +271,8 @@ async function seedData() {
             rating: movie.rating,
             status: movie.status,
             releaseDate: new Date("2024-01-15"),
+            posterUrl: movie.posterUrl,
+            backdropUrl: movie.backdropUrl,
           },
         });
 

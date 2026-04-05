@@ -11,6 +11,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "external-content.duckduckgo.com",
       },
+      {
+        protocol: "https",
+        hostname: "image.tmdb.org",
+        pathname: "/t/p/**",
+      },
     ],
   },
 } satisfies NextConfig;
