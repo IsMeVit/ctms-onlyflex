@@ -9,11 +9,13 @@ import {
   LayoutDashboard,
   LogOut,
   Users,
+  TrendingUp,
 } from "lucide-react";
 import { SeatIcon } from "@/components/seats/SeatSVG";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
+  { id: "analytics", label: "Analytics", icon: TrendingUp, href: "/admin/analytics" },
   { id: "movies", label: "Movies", icon: Film, href: "/admin/movies" },
   { id: "halls", label: "Halls", icon: Building2, href: "/admin/halls" },
   { id: "showtimes", label: "Showtimes", icon: Calendar, href: "/admin/showtimes" },

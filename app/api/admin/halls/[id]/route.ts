@@ -111,24 +111,31 @@ export async function PUT(
 
     // Use transaction to update hall and regenerate seats if rowConfigs provided
     const hall = await prisma.$transaction(async (tx) => {
+      // Build update data with proper handling
+      const updateData: Record<string, unknown> = {};
+
+      if (name) updateData.name = name.trim();
+      if (hallType) updateData.hallType = hallType;
+      if (screenType) updateData.screenType = screenType;
+      updateData.capacity = newCapacity;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (isPublished !== undefined) updateData.isPublished = isPublished;
+      if (rows) updateData.rows = rows;
+      if (columns) updateData.columns = columns;
+      if (rowConfigs !== undefined) {
+        updateData.rowConfigs = rowConfigs;
+      }
+
       // Update hall basic info
       const updatedHall = await tx.hall.update({
         where: { id },
-        data: {
-          ...(name && { name: name.trim() }),
-          ...(hallType && { hallType }),
-          ...(screenType && { screenType }),
-          capacity: newCapacity,
-          ...(isActive !== undefined && { isActive }),
-          ...(isPublished !== undefined && { isPublished }),
-          ...(rows && { rows }),
-          ...(columns && { columns }),
-          ...(rowConfigs && { rowConfigs: rowConfigs as unknown as Prisma.InputJsonValue }),
-        },
+        data: updateData as Prisma.HallUpdateInput,
       });
 
       // If rowConfigs provided, regenerate all seats
-      if (rowConfigs && rowConfigs.length > 0) {
+      if (rowConfigs !== undefined && Array.isArray(rowConfigs)) {
+        console.log("Regenerating seats with rowConfigs:", JSON.stringify(rowConfigs));
+        
         // Delete all existing seats
         await tx.seat.deleteMany({ where: { hallId: id } });
 
@@ -139,6 +146,8 @@ export async function PUT(
           rowConfigs as RowConfig[],
           id
         );
+        
+        console.log("Generated seats:", seatsToCreate.length, "seats");
 
         // Create new seats
         await tx.seat.createMany({
@@ -250,6 +259,8 @@ export async function PATCH(
       }
     }
 
+    const rowsNum = typeof rows === "number" ? rows : undefined;
+    const columnsNum = typeof columns === "number" ? columns : undefined;
     const updateData: Record<string, unknown> = {};
 
     if (name !== undefined) {
@@ -274,20 +285,43 @@ export async function PATCH(
       updateData.isActive = isActive;
     }
     if (rowConfigs !== undefined) {
-      updateData.rowConfigs = rowConfigs;
+      updateData.rowConfigs = rowConfigs as unknown as Prisma.InputJsonValue;
+      updateData.capacity = (rowsNum ?? existingHall.rows) * (columnsNum ?? existingHall.columns);
     }
 
-    const hall = await prisma.hall.update({
-      where: { id },
-      data: updateData,
-      include: {
-        _count: {
-          select: {
-            showtimes: true,
-            seats: true,
+    const hall = await prisma.$transaction(async (tx) => {
+      const updatedHall = await tx.hall.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // If rowConfigs provided, regenerate all seats
+      if (rowConfigs !== undefined) {
+        await tx.seat.deleteMany({ where: { hallId: id } });
+
+        const seatsToCreate = generateSeatsFromRowConfigs(
+          rowsNum ?? existingHall.rows,
+          columnsNum ?? existingHall.columns,
+          rowConfigs as RowConfig[],
+          id
+        );
+
+        await tx.seat.createMany({
+          data: seatsToCreate,
+        });
+      }
+
+      return tx.hall.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              showtimes: true,
+              seats: true,
+            },
           },
         },
-      },
+      });
     });
 
     return NextResponse.json({ hall });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { SeatGrid } from "@/components/seats/SeatGrid";
 import { SeatSVG } from "@/components/seats/SeatSVG";
 import { Seat } from "@/types/seat";
@@ -13,8 +13,10 @@ import {
   Building2, 
   Loader2,
   ChevronRight,
+  ChevronLeft,
   Info
 } from "lucide-react";
+import Link from "next/link";
 
 interface Hall {
   id: string;
@@ -63,15 +65,27 @@ export default function HallPreviewPage() {
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.set("search", searchQuery);
-      params.set("includeSeats", "true");
 
       const response = await fetch(`/api/admin/halls?${params}`);
       const data = await response.json();
 
       if (response.ok) {
         setHalls(data.halls);
-        if (data.halls.length > 0 && !selectedHall) {
-          setSelectedHall(data.halls[0]);
+        // Fetch seats for first hall only if no hall is currently selected
+        if (data.halls.length > 0) {
+          // If we already have a selected hall with seats, keep it
+          if (selectedHall && selectedHall.seats && selectedHall.seats.length > 0) {
+            return;
+          }
+          // Otherwise fetch seats for the first hall
+          const firstHall = data.halls[0];
+          const seatsResponse = await fetch(`/api/admin/halls/${firstHall.id}/seats`);
+          const seatsData = await seatsResponse.json();
+          if (seatsResponse.ok) {
+            setSelectedHall({ ...firstHall, seats: seatsData.seats });
+          } else {
+            setSelectedHall(firstHall);
+          }
         }
       }
     } catch (error) {
@@ -79,16 +93,36 @@ export default function HallPreviewPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, selectedHall]);
+  }, [searchQuery]);
+
+  // Fetch seats when selecting a hall
+  const handleSelectHall = useCallback(async (hall: Hall) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/admin/halls/${hall.id}/seats`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSelectedHall({ ...hall, seats: data.seats });
+      } else {
+        setSelectedHall(hall);
+      }
+    } catch (error) {
+      console.error("Failed to fetch seats:", error);
+      setSelectedHall(hall);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchHalls();
   }, [fetchHalls]);
 
-  // Polling for live updates
+  // Polling disabled for better performance - only fetch on mount and hall selection
   const { isPolling, lastUpdated } = usePolling({
-    interval: 5000,
-    enabled: true,
+    interval: 60000,
+    enabled: false,
     onPoll: fetchHalls,
   });
 
@@ -105,7 +139,7 @@ export default function HallPreviewPage() {
     console.log("Seat clicked:", seat);
   };
 
-  const getSeatsForGrid = (): Seat[] => {
+  const getSeatsForGrid = useMemo((): Seat[] => {
     if (!selectedHall) return [];
     
     if (!selectedHall.seats || selectedHall.seats.length === 0) {
@@ -132,7 +166,7 @@ export default function HallPreviewPage() {
       ...seat,
       status: seat.status || "AVAILABLE",
     }));
-  };
+  }, [selectedHall]);
 
   if (isLoading) {
     return (
@@ -151,10 +185,18 @@ export default function HallPreviewPage() {
       <div className="w-80 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b] flex flex-col">
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight uppercase">Seat Preview</h1>
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/admin/halls"
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+              </Link>
+              <h1 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight uppercase">Seat Preview</h1>
+            </div>
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter">
-              <span className={`w-2 h-2 rounded-full ${isPolling ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"} ${isPolling ? "animate-pulse" : ""}`} />
-              <span className="text-zinc-500">Live</span>
+              <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <span className="text-zinc-500">{halls.length} Halls</span>
             </div>
           </div>
           
@@ -181,12 +223,13 @@ export default function HallPreviewPage() {
               {halls.map((hall) => (
                 <button
                   key={hall.id}
-                  onClick={() => setSelectedHall(hall)}
+                  onClick={() => handleSelectHall(hall)}
+                  disabled={isLoading}
                   className={`w-full p-4 text-left rounded-xl transition-all group border ${
                     selectedHall?.id === hall.id 
                       ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30" 
                       : "bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-                  }`}
+                  } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <h3 className={`font-bold text-sm ${selectedHall?.id === hall.id ? "text-red-700 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"}`}>
@@ -266,7 +309,7 @@ export default function HallPreviewPage() {
 
               <div className="flex justify-center">
                 <SeatGrid
-                  seats={getSeatsForGrid()}
+                  seats={getSeatsForGrid}
                   columns={selectedHall.columns}
                   selectedSeats={selectedSeats}
                   viewMode={viewMode}

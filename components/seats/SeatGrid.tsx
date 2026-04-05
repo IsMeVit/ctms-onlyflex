@@ -34,7 +34,7 @@ const getAisleColumns = (totalColumns: number): number[] => {
   return aisles;
 };
 
-export function SeatGrid({
+export const SeatGrid = memo(function SeatGrid({
   seats,
   columns,
   selectedSeats,
@@ -215,4 +215,4 @@ export function SeatGrid({
       </div>
     </div>
   );
-}
+});
