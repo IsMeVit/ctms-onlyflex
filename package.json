@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "node --import dotenv/config --import tsx scripts/seed-admin.ts"
+    "db:seed": "node --import dotenv/config --import tsx scripts/seed-admin.ts",
+    "studio": "prisma studio --url postgresql://postgres:admin234@localhost:5432/moviedb"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
