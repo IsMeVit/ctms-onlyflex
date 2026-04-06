@@ -34,7 +34,7 @@ export function Sidebar() {
             <Film className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg">OnlyFlex</h1>
+            <h1 className="font-bold text-lg">OnlyFlix</h1>
             <p className="text-xs text-zinc-500">Admin Portal</p>
           </div>
         </div>

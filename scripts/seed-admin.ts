@@ -4,31 +4,41 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const dbUrl = process.env.DATABASE_URL?.replace("db:5432", "localhost:5432") 
+  ?? "postgresql://postgres:admin123@localhost:5432/moviedb";
+const pool = new Pool({ connectionString: dbUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const adminEmail = process.env.ADMIN_EMAIL;
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+if (!adminEmail || !adminPassword) {
+  console.error("❌ Missing required environment variables:");
+  if (!adminEmail) console.error("   ADMIN_EMAIL is not set");
+  if (!adminPassword) console.error("   ADMIN_PASSWORD is not set");
+  console.error("\nPlease set these in your .env file.");
+  process.exit(1);
+}
+
 async function seedAdmin() {
   try {
-    // Check if admin already exists
     const existingAdmin = await prisma.user.findUnique({
-      where: { email: "admin@movietickets.com" },
+      where: { email: adminEmail },
     });
 
     if (existingAdmin) {
       console.log("Admin user already exists");
-      console.log("Email: admin@movietickets.com");
-      console.log("Password: admin123");
+      console.log(`Email: ${adminEmail}`);
       return;
     }
 
-    // Create admin user
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const admin = await prisma.user.create({
       data: {
         name: "System Administrator",
-        email: "admin@movietickets.com",
+        email: adminEmail,
         password: hashedPassword,
         role: "ADMIN",
         membershipTier: "NONE",
@@ -36,9 +46,8 @@ async function seedAdmin() {
     });
 
     console.log("✅ Admin user created successfully!");
-    console.log("Email: admin@movietickets.com");
-    console.log("Password: admin123");
-    console.log("User ID:", admin.id);
+    console.log(`Email: ${adminEmail}`);
+    console.log(`User ID: ${admin.id}`);
   } catch (error) {
     console.error("❌ Error creating admin user:", error);
   } finally {

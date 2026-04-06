@@ -29,6 +29,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
       NEXTAUTH_URL: ${APP_URL:-http://localhost:3000}
       AUTH_URL: ${APP_URL:-http://localhost:3000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
 
 volumes:
   postgres_data:

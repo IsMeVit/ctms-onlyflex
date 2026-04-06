@@ -155,9 +155,7 @@ docker compose up -d --build
 ## Admin Access
 
 1. Visit `http://86.48.3.217/admin/login`
-2. Default admin credentials (seeded):
-   - Email: `admin@ctms.com`
-   - Password: `admin123`
+2. Credentials are set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in your `.env` file
 
 ## Environment Variables
 

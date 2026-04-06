@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 
 # 1. Install dependencies
 FROM base AS deps
@@ -23,6 +23,8 @@ RUN npm ci && npx prisma generate
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
+COPY --from=deps /app/app/generated ./app/generated
 
 # Copy env file for build (prisma.config.ts needs DATABASE_URL)
 COPY .env.production .env.local
@@ -57,6 +59,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy prisma schema, config, and migrations for runtime migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+
+# Copy generated Prisma client
+COPY --from=builder --chown=nextjs:nodejs /app/app/generated ./app/generated
 
 # Install prisma CLI for migrate deploy at runtime
 COPY --from=builder /app/package.json /app/package-lock.json ./
