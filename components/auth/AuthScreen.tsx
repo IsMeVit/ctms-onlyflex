@@ -183,7 +183,7 @@ export function AuthScreen({ initialTab, callbackUrl }: AuthScreenProps) {
           <div className="absolute inset-0 flex flex-col justify-between p-10">
             <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
               <Film className="h-4 w-4 text-red-500" />
-              OnlyFlix Access
+              OnlyFlex Access
             </div>
 
             <div className="max-w-md space-y-4">
@@ -213,7 +213,7 @@ export function AuthScreen({ initialTab, callbackUrl }: AuthScreenProps) {
 
               <div className="mb-8 space-y-4">
                 <p className="text-sm font-medium uppercase tracking-[0.35em] text-zinc-500">
-                  Welcome to OnlyFlix
+                  Welcome to OnlyFlex
                 </p>
                 <h2 className="text-3xl font-bold text-white sm:text-4xl">
                   {activeTab === "login" ? "Log in to continue" : "Create your account"}

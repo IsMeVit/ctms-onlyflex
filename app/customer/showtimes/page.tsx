@@ -54,20 +54,12 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
-// Available theaters (fallback/static list)
-const theaters = [
-  { id: 1, name: 'OnlyFlix Central', address: 'Norodom Blvd, Phnom Penh' },
-  { id: 2, name: 'OnlyFlix Riverside', address: 'Sisowath Quay, Phnom Penh' },
-  { id: 3, name: 'OnlyFlix Sen Sok', address: 'Street 2004, Phnom Penh' },
-];
-
 interface ShowtimesPageProps {
   onBookingClick?: () => void;
 }
 
 export function ShowtimesPage({ onBookingClick }: ShowtimesPageProps) {
   const router = useRouter();
-  const [selectedTheater] = useState(theaters[0]);
   const [selectedDate, setSelectedDate] = useState<DateOption | null>(null);
   const [showtimePageByMovie, setShowtimePageByMovie] = useState<Record<string, number>>({});
   const { data, error, isLoading } = CustomerMovieService.FetchAll();
@@ -160,7 +152,7 @@ export function ShowtimesPage({ onBookingClick }: ShowtimesPageProps) {
     }
 
     router.push(
-      `/customer/bookings?showtimeId=${encodeURIComponent(slot.id)}&movie=${encodeURIComponent(movieTitle)}&time=${encodeURIComponent(slot.time)}&location=${encodeURIComponent(selectedTheater.name)}&screen=${encodeURIComponent(slot.screen)}&type=${encodeURIComponent(slot.type)}`
+      `/customer/bookings?showtimeId=${encodeURIComponent(slot.id)}&movie=${encodeURIComponent(movieTitle)}&time=${encodeURIComponent(slot.time)}&screen=${encodeURIComponent(slot.screen)}&type=${encodeURIComponent(slot.type)}`
     );
   };
 

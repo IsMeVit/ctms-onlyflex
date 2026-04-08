@@ -12,7 +12,7 @@ const normalizePhone = (value: string) => value.replace(/\D/g, "");
 
 const isEmailLike = (value: string) => value.includes("@");
 
-const buildSyntheticEmail = (phone: string) => `phone-${phone}@onlyflix.local`;
+const buildSyntheticEmail = (phone: string) => `phone-${phone}@onlyflex.local`;
 
 export async function POST(req: NextRequest) {
   try {

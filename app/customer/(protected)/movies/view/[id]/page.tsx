@@ -11,39 +11,61 @@ import {
   Play,
   Star,
   Users,
-  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ButtonRed } from "@/components/ui/ButtonRed";
 import ButtonGray from "@/components/ui/ButtonGray";
-import { Card } from "@/components/ui/Card";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
+import RatingMovie from "@/app/customer/(protected)/movies/RatingMovie";
 import { isFavoriteMovie, toggleFavoriteMovie } from "@/lib/favorite-movies";
-import { canRateMovie, getRatingEligibilityMessage } from "@/lib/rating-eligibility";
-import { getNextShowingLabel, getUpcomingShowtimes } from "@/lib/movie-availability";
 
-type RatingBooking = {
-  id: string;
-  isScanned: boolean;
-  isRated: boolean;
-  showtime: {
-    startTime: string;
-    movie: {
-      id: string;
-      title: string;
-      duration?: number | null;
-    };
-  };
+type DateOption = {
+  value: string;
+  label: string;
+  dayOfWeek: string;
+  date: string;
+  hasShowtimes: boolean;
 };
+
+const dayOfWeekFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+});
+
+const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+});
+
+function getDateKey(value: string | Date) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
 
 export default function MovieDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const [selectedDate, setSelectedDate] = useState<DateOption | null>(null);
   const [isRatingLoading, setIsRatingLoading] = useState(true);
-  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
+  const [hasRatedMovie, setHasRatedMovie] = useState(false);
   const [ratingMessage, setRatingMessage] = useState("");
-  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingValue, setRatingValue] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingError, setRatingError] = useState("");
@@ -53,8 +75,11 @@ export default function MovieDetailPage() {
   useEffect(() => {
     let mounted = true;
 
-    const loadEligibility = async () => {
+    const loadRatingStatus = async () => {
       if (!movie?.id) {
+        setHasRatedMovie(false);
+        setRatingMessage("");
+        setIsRatingLoading(false);
         return;
       }
 
@@ -63,65 +88,33 @@ export default function MovieDetailPage() {
       setRatingSuccess("");
 
       try {
-        const response = await fetch(
-          `/api/customer/booking?movieId=${encodeURIComponent(movie.id)}&limit=50`,
-          { credentials: "include" },
-        );
+        const response = await fetch(`/api/customer/rating?movieId=${encodeURIComponent(movie.id)}`, {
+          credentials: "include",
+        });
         const payload = await response.json();
 
         if (!response.ok) {
-          throw new Error(payload?.error || "Failed to load rating eligibility");
+          throw new Error(payload?.error || "Failed to load rating status");
         }
-
-        const bookings: RatingBooking[] = Array.isArray(payload?.bookings) ? payload.bookings : [];
-        const alreadyRated = bookings.some((booking) => booking.isRated);
-        const eligibleBooking = bookings.find((booking) =>
-          canRateMovie({
-            showtimeStart: booking?.showtime?.startTime,
-            duration: movie?.durationMinutes,
-            isScanned: booking?.isScanned,
-            isRated: booking?.isRated,
-          }),
-        );
 
         if (!mounted) {
           return;
         }
 
-        if (alreadyRated) {
-          setEligibleBookingId(null);
+        if (payload?.hasRated) {
+          setHasRatedMovie(true);
           setRatingMessage("You already rated this movie.");
-        } else if (eligibleBooking) {
-          setEligibleBookingId(eligibleBooking.id);
-          setRatingMessage(
-            getRatingEligibilityMessage({
-              showtimeStart: eligibleBooking?.showtime?.startTime,
-              duration: movie?.durationMinutes,
-              isScanned: eligibleBooking?.isScanned,
-              isRated: eligibleBooking?.isRated,
-            }),
-          );
-        } else if (bookings.length > 0) {
-          setEligibleBookingId(null);
-          setRatingMessage(
-            getRatingEligibilityMessage({
-              showtimeStart: bookings[0]?.showtime?.startTime,
-              duration: movie?.durationMinutes,
-              isScanned: bookings[0]?.isScanned,
-              isRated: bookings[0]?.isRated,
-            }),
-          );
         } else {
-          setEligibleBookingId(null);
-          setRatingMessage("You can rate this movie after the show ends.");
+          setHasRatedMovie(false);
+          setRatingMessage("How would you rate this movie?");
         }
       } catch (loadError) {
         if (!mounted) {
           return;
         }
-        setEligibleBookingId(null);
+        setHasRatedMovie(false);
         setRatingMessage("");
-        setRatingError(loadError instanceof Error ? loadError.message : "Failed to load rating eligibility");
+        setRatingError(loadError instanceof Error ? loadError.message : "Failed to load rating status");
       } finally {
         if (mounted) {
           setIsRatingLoading(false);
@@ -129,12 +122,12 @@ export default function MovieDetailPage() {
       }
     };
 
-    void loadEligibility();
+    void loadRatingStatus();
 
     return () => {
       mounted = false;
     };
-  }, [movie?.id, movie?.durationMinutes]);
+  }, [movie?.id]);
 
   useEffect(() => {
     if (!movie?.id) {
@@ -156,8 +149,108 @@ export default function MovieDetailPage() {
     };
   }, [movie?.id]);
 
+  useEffect(() => {
+    const tick = () => setCurrentTime(Date.now());
+    tick();
+
+    const intervalId = window.setInterval(tick, 5 * 60 * 1000);
+    const handleFocus = () => tick();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  const movieShowtimeDetails = useMemo(() => movie?.showtimeDetails ?? [], [movie?.showtimeDetails]);
+  const dateOptions: DateOption[] = Array.from({ length: 7 }).map((_, index) => {
+    const today = startOfDay(new Date(currentTime));
+    const todayKey = getDateKey(today);
+    const tomorrowKey = getDateKey(addDays(today, 1));
+    const date = addDays(today, index);
+    const dateKey = getDateKey(date);
+    const hasShowtimes = movieShowtimeDetails.some((showtime) => {
+      if (!showtime.startTime) {
+        return false;
+      }
+
+      const slotKey = getDateKey(showtime.startTime);
+      if (slotKey !== dateKey) {
+        return false;
+      }
+
+      if (slotKey === todayKey) {
+        return new Date(showtime.startTime).getTime() > currentTime;
+      }
+
+      return true;
+    });
+
+    return {
+      value: dateKey,
+      label:
+        dateKey === todayKey
+          ? "Today"
+          : dateKey === tomorrowKey
+            ? "Tomorrow"
+            : shortDateFormatter.format(date),
+      dayOfWeek: dayOfWeekFormatter.format(date),
+      date: shortDateFormatter.format(date),
+      hasShowtimes,
+    };
+  });
+  const visibleDateOptions = dateOptions.filter((date) => date.hasShowtimes);
+
+  useEffect(() => {
+    if (!selectedDate && visibleDateOptions.length > 0) {
+      setSelectedDate(visibleDateOptions[0]);
+      return;
+    }
+
+    if (selectedDate && !visibleDateOptions.some((option) => option.value === selectedDate.value)) {
+      setSelectedDate(visibleDateOptions[0] ?? null);
+    }
+  }, [selectedDate, visibleDateOptions]);
+
+  const selectedDateKey = selectedDate?.value ?? null;
+  const selectedDateShowtimes = useMemo(() => {
+    if (!selectedDateKey) {
+      return [];
+    }
+
+    const todayKey = getDateKey(new Date(currentTime));
+
+    return movieShowtimeDetails
+      .filter((showtime) => {
+        if (!showtime.startTime) {
+          return false;
+        }
+
+        const slotKey = getDateKey(showtime.startTime);
+        if (slotKey !== selectedDateKey) {
+          return false;
+        }
+
+        if (slotKey === todayKey) {
+          return new Date(showtime.startTime).getTime() > currentTime;
+        }
+
+        return true;
+      })
+      .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime());
+  }, [movieShowtimeDetails, selectedDateKey, currentTime]);
+
   const handleSubmitRating = async () => {
-    if (!eligibleBookingId) {
+    if (!movie?.id || hasRatedMovie) {
       return;
     }
 
@@ -170,7 +263,7 @@ export default function MovieDetailPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          bookingId: eligibleBookingId,
+          movieId: movie.id,
           rating: ratingValue,
         }),
       });
@@ -181,7 +274,7 @@ export default function MovieDetailPage() {
       }
 
       setRatingSuccess(payload?.message || "Thanks! Your rating was saved.");
-      setEligibleBookingId(null);
+      setHasRatedMovie(true);
       setRatingMessage("You already rated this movie.");
       setShowRatingModal(false);
     } catch (submitError) {
@@ -300,7 +393,7 @@ export default function MovieDetailPage() {
                 >
                   <Heart className={`h-5 w-5 ${isLiked ? "fill-white text-white" : ""}`} />
                 </ButtonGray>
-               
+
                 {isRatingLoading ? (
                   <ButtonGray
                     type="button"
@@ -309,25 +402,28 @@ export default function MovieDetailPage() {
                   >
                     Checking rating...
                   </ButtonGray>
-                ) : eligibleBookingId && !ratingSuccess ? (
-                  <ButtonRed
-                    type="button"
-                    onClick={() => setShowRatingModal(true)}
-                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-6 py-4 text-lg font-bold transition-all hover:shadow-lg hover:shadow-red-500/30"
-                  >
-                    <Star className="h-5 w-5 fill-white" />
-                    Rate Movie
-                  </ButtonRed>
-                ) : (
+                ) : hasRatedMovie ? (
                   <ButtonGray
                     type="button"
                     disabled
                     className="inline-flex items-center justify-center rounded-lg border-2 border-orange-500/50 bg-zinc-900 p-4 text-orange-400 transition-colors"
-                    aria-label="Rate Locked"
-                    title="Rate Locked"
+                    aria-label="Rated"
+                    title="Rated"
                   >
-                    <Star className="h-5 w-5" />
-                    <span className="sr-only">{ratingSuccess ? "Rated" : "Rate Locked"}</span>
+                    <Star className="h-5 w-5 fill-orange-400 text-orange-400" />
+                    <span className="sr-only">Rated</span>
+                  </ButtonGray>
+                ) : (
+                  <ButtonGray
+                    type="button"
+                    onClick={() => {
+                      setRatingValue(0);
+                      setShowRatingModal(true);
+                    }}
+                    // className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-6 py-4 text-lg font-bold transition-all hover:shadow-lg hover:shadow-red-500/30"
+                  >
+                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                    Rate
                   </ButtonGray>
                 )}
               </div>
@@ -348,74 +444,19 @@ export default function MovieDetailPage() {
         </div>
       </section>
 
-      {showRatingModal && eligibleBookingId ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <Card className="w-full max-w-md border-zinc-800 bg-zinc-950 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">Rate Movie</p>
-                <h3 className="mt-2 text-2xl font-bold text-white">{movie.title}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowRatingModal(false)}
-                className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-white"
-                aria-label="Close rating dialog"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <p className="text-sm text-zinc-400">
-                Pick a score from 1 to 5 stars. Your rating will be saved to this movie.
-              </p>
-
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((score) => (
-                  <button
-                    key={score}
-                    type="button"
-                    onClick={() => setRatingValue(score)}
-                    className="rounded-full p-1 transition-transform hover:scale-110"
-                    aria-label={`Set rating to ${score} star${score > 1 ? "s" : ""}`}
-                  >
-                    <Star
-                      className={`h-8 w-8 ${
-                        score <= ratingValue
-                          ? "fill-yellow-500 text-yellow-500"
-                          : "text-zinc-700"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <ButtonGray
-                  type="button"
-                  onClick={() => setShowRatingModal(false)}
-                  className="flex-1 rounded-xl bg-zinc-800 py-3 text-base"
-                >
-                  Cancel
-                </ButtonGray>
-                <ButtonRed
-                  type="button"
-                  onClick={() => void handleSubmitRating()}
-                  disabled={ratingSubmitting}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-red-700 py-3 text-base font-bold"
-                >
-                  {ratingSubmitting ? "Saving..." : "Submit Rating"}
-                </ButtonRed>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      <RatingMovie
+        open={showRatingModal}
+        title={movie.title}
+        ratingValue={ratingValue}
+        ratingSubmitting={ratingSubmitting}
+        onClose={() => setShowRatingModal(false)}
+        onSubmit={() => void handleSubmitRating()}
+        onRatingChange={setRatingValue}
+      />
 
       <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-          <div className="space-y-8">
+        <div className={`grid gap-8 ${movie.cast.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+          {movie.cast.length > 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
               <h2 className="mb-4 text-2xl font-bold">Cast</h2>
               <div className="flex flex-wrap gap-3">
@@ -429,65 +470,120 @@ export default function MovieDetailPage() {
                 ))}
               </div>
             </div>
+          ) : null}
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-              <h2 className="mb-4 text-2xl font-bold">About</h2>
-              <div className="grid gap-4 text-sm text-zinc-300 sm:grid-cols-2">
-                <div>
-                  <p className="mb-1 text-zinc-500">Director</p>
-                  <p className="font-medium text-white">{movie.director}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-zinc-500">Language</p>
-                  <p className="font-medium text-white">{movie.language}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-zinc-500">Genre</p>
-                  <p className="font-medium text-white">{movie.genre}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-zinc-500">Release Date</p>
-                  <p className="font-medium text-white">{movie.releaseDate}</p>
-                </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+            <h2 className="mb-4 text-2xl font-bold">About</h2>
+            <div className="grid gap-4 text-sm text-zinc-300 sm:grid-cols-2">
+              <div>
+                <p className="mb-1 text-zinc-500">Director</p>
+                <p className="font-medium text-white">{movie.director}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-zinc-500">Language</p>
+                <p className="font-medium text-white">{movie.language}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-zinc-500">Genre</p>
+                <p className="font-medium text-white">{movie.genre}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-zinc-500">Release Date</p>
+                <p className="font-medium text-white">{movie.releaseDate}</p>
               </div>
             </div>
           </div>
+        </div>
 
-          <aside className="space-y-4">
-            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
-              <h3 className="mb-3 text-lg font-semibold">Book Today</h3>
-              <p className="mb-4 text-sm text-zinc-400">
-                Choose a showtime and head into booking with fewer clicks.
-              </p>
+        <div className="mt-8 rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
+          <h3 className="mb-3 text-lg font-semibold">Book Today</h3>
+          <p className="mb-4 text-sm text-zinc-400">
+            Choose a date and showtime before heading into booking.
+          </p>
+
+          {visibleDateOptions.length > 0 ? (
+            <div className="space-y-5">
               <div className="space-y-3">
-                {getUpcomingShowtimes(movie).length > 0
-                  ? getUpcomingShowtimes(movie)
-                      .slice(0, 6)
-                      .map((showtime) => (
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-400">
+                  <Calendar className="h-4 w-4" />
+                  Select Date
+                </label>
+                <div
+                  className="grid gap-2"
+                  style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
+                >
+                  {dateOptions.map((date) => (
+                    date.hasShowtimes ? (
+                      <button
+                        key={date.value}
+                        type="button"
+                        onClick={() => setSelectedDate(date)}
+                        className={`w-full rounded-lg border px-2 py-3 text-center transition-all ${
+                          selectedDate?.value === date.value
+                            ? "border-red-500 bg-gradient-to-r from-red-500 to-red-700 text-white shadow-lg shadow-red-500/30"
+                            : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                        }`}
+                      >
+                        <p className="mb-1 text-xs font-medium">{date.dayOfWeek}</p>
+                        <p className="truncate text-sm font-bold">
+                          {date.label === "Today" || date.label === "Tomorrow" ? date.label : date.date}
+                        </p>
+                      </button>
+                    ) : (
+                      <div
+                        key={date.value}
+                        className="invisible w-full rounded-lg border border-transparent px-2 py-3"
+                        aria-hidden="true"
+                      >
+                        <p className="mb-1 text-xs font-medium">{date.dayOfWeek}</p>
+                        <p className="truncate text-sm font-bold">
+                          {date.label === "Today" || date.label === "Tomorrow" ? date.label : date.date}
+                        </p>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-zinc-400">
+                  {selectedDate?.label ? `Showtimes on ${selectedDate.label}` : "Showtimes"}
+                </p>
+
+                {selectedDateShowtimes.length > 0 ? (
+                  <div className="flex flex-wrap gap-4">
+                    {selectedDateShowtimes.map((showtime) => (
                       <Link
                         key={showtime.id}
                         href={`/customer/bookings?showtimeId=${encodeURIComponent(showtime.id)}&movie=${encodeURIComponent(movie.title)}&time=${encodeURIComponent(showtime.time)}&screen=${encodeURIComponent(showtime.screen)}&type=${encodeURIComponent(showtime.type)}`}
-                        className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 transition-all hover:border-red-500 hover:bg-zinc-900"
+                        className="min-w-[280px] rounded-2xl border border-zinc-800 bg-black px-4 py-4 transition-all hover:border-red-500"
                       >
-                        <div>
-                          <span className="font-semibold">{showtime.time}</span>
-                          <p className="text-xs text-zinc-500">{showtime.screen}</p>
+                        <div className="space-y-2">
+                          <h4 className="text-md font-bold tracking-tight text-white">
+                            {showtime.time}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs text-zinc-400">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span>{showtime.availableSeats} seats left</span>
+                          </div>
                         </div>
-                        <span className="text-xs text-zinc-400">Reserve</span>
                       </Link>
-                      ))
-                  : getNextShowingLabel(movie) ? (
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
-                        Next showing: {getNextShowingLabel(movie)}
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
-                        No future showtimes available yet.
-                      </div>
-                    )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
+                    {selectedDate?.value === getDateKey(new Date(currentTime))
+                      ? "No future showtimes available for today."
+                      : "No showtimes available on this date."}
+                  </div>
+                )}
               </div>
             </div>
-          </aside>
+          ) : (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
+              No future showtimes available yet.
+            </div>
+          )}
         </div>
       </section>
     </div>

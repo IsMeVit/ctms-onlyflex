@@ -1,4 +1,4 @@
-export const FAVORITE_MOVIES_STORAGE_KEY = "onlyflix.favorite-movies";
+export const FAVORITE_MOVIES_STORAGE_KEY = "onlyflex.favorite-movies";
 export const FAVORITE_MOVIES_UPDATED_EVENT = "favorite-movies-updated";
 
 function readStoredFavoriteIds() {

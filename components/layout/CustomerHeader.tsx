@@ -109,7 +109,7 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
               <Film className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-xl">OnlyFlix</h1>
+              <h1 className="font-bold text-xl">OnlyFlex</h1>
               <p className="text-xs text-zinc-500">Premium Cinema</p>
             </div>
           </button>

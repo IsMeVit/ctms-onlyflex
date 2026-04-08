@@ -6,10 +6,8 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import BaseMovieCard from "@/components/layout/BaseMovieCard";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
+import { ButtonRed } from "@/components/ui/ButtonRed";
 
-const genres = ["All Genres", "Action", "Sci-Fi", "Horror", "Fantasy", "Drama", "Comedy", "Romance", "Documentary"];
-const certifications = ["All Ratings", "G", "PG", "PG-13", "R"];
-const languages = ["All Languages", "English", "Spanish", "French", "Hindi"];
 const sortOptions = [
   { value: "rating", label: "Sort by Rating" },
   { value: "title", label: "Sort by Title" },
@@ -33,22 +31,71 @@ export default function ViewAllMoviesPage() {
     setSearchQuery(searchParams.get("search") || "");
   }, [searchParams]);
 
-  const genreOptions = genres.map((genre) => ({ value: genre, label: genre }));
-  const certificationOptions = certifications.map((certification) => ({
-    value: certification,
-    label: certification,
-  }));
-  const languageOptions = languages.map((language) => ({
-    value: language,
-    label: language,
-  }));
+  const genreOptions: Array<{ value: string; label: string }> = useMemo(() => {
+    interface GenreOption {
+      value: string;
+      label: string;
+    }
+
+    const uniqueGenres: string[] = Array.from(
+      new Set<string>(
+        movies.flatMap((movie: { genres: string[] }) =>
+          Array.isArray(movie.genres) ? movie.genres.map((genre: string) => genre.trim()).filter(Boolean) : [],
+        ),
+      ),
+    ).sort((left: string, right: string) => left.localeCompare(right));
+
+    return [
+      { value: "All Genres", label: "All Genres" },
+      ...uniqueGenres.map((genre: string) => ({ value: genre, label: genre })),
+    ];
+  }, [movies]);
+
+  const certificationOptions: Array<{ value: string; label: string }> = useMemo(() => {
+    const uniqueCertifications = Array.from<string>(
+      new Set(
+        movies
+          .map((movie: { certification?: string }) => movie.certification?.trim())
+          .filter((certification: string | undefined): certification is string => Boolean(certification)),
+      ),
+    ).sort((left: string, right: string) => left.localeCompare(right));
+
+    return [
+      { value: "All Ratings", label: "All Ratings" },
+      ...uniqueCertifications.map((certification: string) => ({
+        value: certification,
+        label: certification,
+      })),
+    ];
+  }, [movies]);
+
+  const languageOptions: Array<{ value: string; label: string }> = useMemo(() => {
+    const uniqueLanguages = Array.from<string>(
+      new Set(
+        movies
+          .map((movie: { language?: string }) => movie.language?.trim())
+          .filter((language: string | undefined): language is string => Boolean(language)),
+      ),
+    ).sort((left: string, right: string) => left.localeCompare(right));
+
+    return [
+      { value: "All Languages", label: "All Languages" },
+      ...uniqueLanguages.map((language): { value: string; label: string } => ({
+        value: language as string,
+        label: language as string,
+      })),
+    ];
+  }, [movies]);
 
   const filteredAndSortedMovies = useMemo(() => {
-    const filtered = movies.filter((movie: { title: string; genre: string | string[]; certification: string; language: string; }) => {
+    const filtered = movies.filter((movie: { title: string; genres: string[]; certification: string; language: string; }) => {
       const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGenre = selectedGenre === 'All Genres' || movie.genre.includes(selectedGenre);
-      const matchesCertification = selectedCertification === 'All Ratings' || movie.certification === selectedCertification;
-      const matchesLanguage = selectedLanguage === 'All Languages' || movie.language === selectedLanguage;
+      const matchesGenre =
+        selectedGenre === "All Genres" ||
+        movie.genres.some((genre) => genre === selectedGenre);
+      const matchesCertification =
+        selectedCertification === "All Ratings" || movie.certification === selectedCertification;
+      const matchesLanguage = selectedLanguage === "All Languages" || movie.language === selectedLanguage;
       
       return matchesSearch && matchesGenre && matchesCertification && matchesLanguage;
     });
@@ -75,9 +122,9 @@ export default function ViewAllMoviesPage() {
   };
 
   const activeFiltersCount = [
-    selectedGenre !== 'All Genres',
-    selectedCertification !== 'All Ratings',
-    selectedLanguage !== 'All Languages',
+    selectedGenre !== "All Genres",
+    selectedCertification !== "All Ratings",
+    selectedLanguage !== "All Languages",
   ].filter(Boolean).length;
 
   return (
@@ -170,13 +217,13 @@ export default function ViewAllMoviesPage() {
               />
             </div>
 
-            <button
+            <ButtonRed
               onClick={clearFilters}
               disabled={activeFiltersCount === 0 && !searchQuery}
-              className="h-12 w-full md:w-auto md:min-w-40 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-700 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-zinc-800"
+              className="h-12 w-full md:w-auto md:min-w-40 px-4 py-3 border border-zinc-800 rounded-xl cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-zinc-800"
             >
               Clear All
-            </button>
+            </ButtonRed>
           </div>
         </div>
 
@@ -222,12 +269,12 @@ export default function ViewAllMoviesPage() {
             </div>
             <h3 className="text-2xl font-bold mb-2">No movies found</h3>
             <p className="text-zinc-400 mb-6">Try adjusting your filters or search query</p>
-            <button
+            <ButtonRed
               onClick={clearFilters}
               className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium hover:shadow-lg hover:shadow-red-500/30 transition-all"
             >
               Clear All Filters
-            </button>
+            </ButtonRed>
           </div>
         )}
       </div>

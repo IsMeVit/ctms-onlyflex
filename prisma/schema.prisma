@@ -54,6 +54,7 @@ model Movie {
   rating      Decimal?     @db.Decimal(2, 1)
   posterUrl   String?
   backdropUrl String?
+  trailerUrl  String?
   language    String       @default("en")
   status      MovieStatus  @default(RELEASED)
   createdAt   DateTime     @default(now())
