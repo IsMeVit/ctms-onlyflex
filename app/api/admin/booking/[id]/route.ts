@@ -224,6 +224,12 @@ export async function PUT(
             id: true,
             startTime: true,
             endTime: true,
+            movie: {
+              select: {
+                id: true,
+                duration: true,
+              },
+            },
           },
         },
         payment: true,

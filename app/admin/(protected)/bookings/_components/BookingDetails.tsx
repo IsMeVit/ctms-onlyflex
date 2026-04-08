@@ -1,25 +1,61 @@
 "use client";
 
-import { 
-  X, 
-  User, 
-  Mail, 
-  Phone, 
-  Film, 
-  Monitor, 
-  Calendar, 
-  Clock, 
-  DollarSign, 
+import {
+  X,
+  User,
+  Film,
+  Calendar,
+  Clock,
+  DollarSign,
   CheckCircle,
   AlertTriangle,
   Loader2,
-  Trash2,
   Receipt,
-  Download
+  Download,
+  QrCode,
 } from "lucide-react";
+import type { ComponentType } from "react";
 import { SeatIcon } from "@/components/seats/SeatSVG";
 import { useEffect, useState, useCallback } from "react";
 import { StatusBadge } from "@/app/admin/_components/StatusBadge";
+
+interface BookingDetailsData {
+  id: string;
+  bookingStatus: string;
+  isScanned: boolean;
+  isRated: boolean;
+  subtotal: string | number;
+  totalDiscount: string | number;
+  finalAmount: string | number;
+  user: {
+    name: string | null;
+    email: string;
+    phone: string | null;
+    membershipTier?: string | null;
+  };
+  showtime: {
+    startTime: string;
+    movie: {
+      title: string;
+      posterUrl?: string | null;
+    };
+    hall: {
+      name: string;
+    };
+  };
+  payment?: {
+    paymentMethod: string;
+    status: string;
+  } | null;
+  tickets: Array<{
+    id: string;
+    seat: {
+      row: string;
+      seatNumber: number | null;
+      seatType: string;
+    };
+  }>;
+}
 
 interface BookingDetailsProps {
   bookingId: string | null;
@@ -28,7 +64,7 @@ interface BookingDetailsProps {
 }
 
 export default function BookingDetails({ bookingId, onClose, onUpdate }: BookingDetailsProps) {
-  const [booking, setBooking] = useState<any>(null);
+  const [booking, setBooking] = useState<BookingDetailsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState("");
@@ -45,10 +81,10 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
       } else {
         setError("Failed to fetch booking details");
       }
-    } catch (err) {
-      setError("An error occurred while fetching details");
-    } finally {
-      setIsLoading(false);
+      } catch {
+        setError("An error occurred while fetching details");
+      } finally {
+        setIsLoading(false);
     }
   }, [bookingId]);
 
@@ -72,8 +108,31 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
         const data = await response.json();
         alert(data.error || "Failed to update status");
       }
-    } catch (err) {
-      alert("An error occurred while updating status");
+      } catch {
+        alert("An error occurred while updating status");
+      } finally {
+        setIsUpdating(false);
+    }
+  };
+
+  const handleMarkScanned = async () => {
+    if (!bookingId) return;
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/admin/booking/${bookingId}/scan`, {
+        method: "PATCH",
+      });
+
+      if (response.ok) {
+        fetchBooking();
+        onUpdate();
+      } else {
+        const data = await response.json().catch(() => null);
+        alert(data?.error || "Failed to mark booking as scanned");
+      }
+    } catch {
+      alert("An error occurred while updating scan status");
     } finally {
       setIsUpdating(false);
     }
@@ -117,6 +176,12 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
                        booking.bookingStatus === 'PENDING' ? 'pending' :
                        booking.bookingStatus === 'CANCELLED' ? 'error' : 'default'
                     } />
+                    <div className="pt-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                      Scan:{" "}
+                      <span className={booking.isScanned ? "text-emerald-500" : "text-zinc-500"}>
+                        {booking.isScanned ? "Scanned" : "Not scanned"}
+                      </span>
+                    </div>
                  </div>
                  <div className="text-right space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Grand Total</p>
@@ -145,7 +210,7 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
                  <div className="p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[32px] border border-zinc-100 dark:border-zinc-800 flex items-start gap-4">
                     <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
                        {booking.showtime.movie.posterUrl ? (
-                         <img src={booking.showtime.movie.posterUrl} className="w-full h-full object-cover" alt="Poster" />
+                       <img src={booking.showtime.movie.posterUrl || ""} className="w-full h-full object-cover" alt="Poster" />
                        ) : (
                          <div className="w-full h-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
                             <Film className="w-6 h-6 text-zinc-400" />
@@ -171,7 +236,7 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
                     <SeatIcon className="w-4 h-4" /> Reserved Seats ({booking.tickets.length})
                  </h4>
                  <div className="flex flex-wrap gap-2">
-                    {booking.tickets.map((t: any) => (
+                    {booking.tickets.map((t) => (
                        <div key={t.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-black shadow-sm flex items-center gap-2">
                           <span className="text-red-600">{t.seat.row}{t.seat.seatNumber}</span>
                           <span className="text-[10px] text-zinc-400 uppercase">{t.seat.seatType}</span>
@@ -221,6 +286,16 @@ export default function BookingDetails({ bookingId, onClose, onUpdate }: Booking
 
         {/* Footer Actions */}
         <div className="p-8 border-t border-zinc-100 dark:border-zinc-800 flex gap-3 bg-zinc-50/50 dark:bg-zinc-900/50">
+           {booking && !booking.isScanned && booking?.bookingStatus !== 'CANCELLED' && booking?.bookingStatus !== 'REFUNDED' && (
+              <button
+                onClick={handleMarkScanned}
+                disabled={isUpdating}
+                className="flex-1 bg-zinc-950 text-white border border-zinc-800 h-12 rounded-2xl font-black text-sm hover:bg-zinc-900 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                Mark as Scanned
+              </button>
+           )}
            {booking?.bookingStatus === 'PENDING' && (
               <button 
                 onClick={() => handleStatusChange('CONFIRMED')}
@@ -261,7 +336,7 @@ function DetailItem({ label, value }: { label: string, value: string }) {
    );
 }
 
-function SummaryIcon({ icon: Icon, label }: { icon: any, label: string }) {
+function SummaryIcon({ icon: Icon, label }: { icon: ComponentType<{ className?: string }>; label: string }) {
    return (
       <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs uppercase tracking-tight">
          <Icon className="w-3.5 h-3.5" />

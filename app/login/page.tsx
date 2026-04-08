@@ -1,15 +1,11 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { AuthScreen } from "@/components/auth/AuthScreen";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/customer/bookings";
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <LoginForm redirectTo={callbackUrl} />
-    </div>
-  );
+  return <AuthScreen initialTab="login" callbackUrl={callbackUrl} />;
 }

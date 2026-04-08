@@ -27,7 +27,7 @@ export default function ViewAllMoviesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { data, error, isLoading } = CustomerMovieService.FetchAll();
 
-  const movies = data?.movies || [];
+  const movies = useMemo(() => data?.movies ?? [], [data?.movies]);
 
   useEffect(() => {
     setSearchQuery(searchParams.get("search") || "");
@@ -182,9 +182,9 @@ export default function ViewAllMoviesPage() {
 
         {/* Results Count */}
         <div className="mb-6 flex items-center justify-between">
-          <p className="text-zinc-400">
+          {/* <p className="text-zinc-400">
             Showing <span className="text-white font-semibold">{filteredAndSortedMovies.length}</span> {filteredAndSortedMovies.length === 1 ? 'movie' : 'movies'}
-          </p>
+          </p> */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-500">{activeFiltersCount} active filter{activeFiltersCount > 1 ? 's' : ''}</span>
@@ -205,11 +205,8 @@ export default function ViewAllMoviesPage() {
             {filteredAndSortedMovies.map((movie) => (
               <BaseMovieCard
                 key={movie.id}
-                movie={{ ...movie, showtimes: movie.showtimes.slice(0, 3) }}
+                movie={movie}
                 href={`/customer/movies/view/${movie.id}`}
-                onBookNow={() =>
-                  router.push(`/customer/bookings?movie=${encodeURIComponent(movie.title)}`)
-                }
                 onShowtimeClick={(time) =>
                   router.push(
                     `/customer/bookings?movie=${encodeURIComponent(movie.title)}&time=${encodeURIComponent(time)}`

@@ -1,89 +1,143 @@
-import { Calendar, Bell } from 'lucide-react';
-import { ButtonRed } from '../ui/ButtonRed';
-import ButtonGray from '../ui/ButtonGray';
-// import { ImageWithFallback } from '../figma/ImageWithFallback';
+"use client";
 
-const upcomingMovies = [
-  {
-    title: 'Eternal Echoes',
-    genre: 'Drama / Romance',
-    releaseDate: 'Feb 14, 2026',
-    image: 'https://images.unsplash.com/photo-1706705505194-d8bdb0d9924f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkcmFtYSUyMGVtb3Rpb25hbCUyMG1vdmllfGVufDF8fHx8MTc3MDM4MzAxOXww&ixlib=rb-4.1.0&q=80&w=1080',
-    description: 'A timeless love story that transcends generations and challenges destiny itself.',
-  },
-  {
-    title: 'Quantum Strike II',
-    genre: 'Action / Sci-Fi',
-    releaseDate: 'Feb 28, 2026',
-    image: 'https://images.unsplash.com/photo-1600333791066-f3c7e752b44e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3ZpZSUyMGFjdGlvbiUyMGhlcm98ZW58MXx8fHwxNzcwMzgzMDE3fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    description: 'The sequel to the blockbuster hit returns with more action and mind-bending twists.',
-  },
-  {
-    title: 'Beyond the Stars',
-    genre: 'Sci-Fi / Adventure',
-    releaseDate: 'Mar 15, 2026',
-    image: 'https://images.unsplash.com/photo-1655006852875-7912caa28e8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2ktZmklMjBzcGFjZSUyMG1vdmllfGVufDF8fHx8MTc3MDM0OTgxMHww&ixlib=rb-4.1.0&q=80&w=1080',
-    description: 'Journey to the edge of the universe in this epic space exploration adventure.',
-  },
-];
+import Link from "next/link";
+import { Calendar, ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import CustomerMovieService from "../services/CustomerMovieService";
+import {
+  getMovieDetailsHref,
+  isComingSoonMovie,
+} from "@/lib/movie-availability";
+import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
 
 export function ComingSoon() {
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const { data, error, isLoading, mutate } = CustomerMovieService.FetchAll({
+    limit: 100,
+    sortBy: "releaseDate",
+    sortOrder: "asc",
+  }, {
+    refreshInterval: 24 * 60 * 60 * 1000,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+
+  const movies = useMemo(() => data?.movies ?? [], [data?.movies]);
+  const comingSoonMovies = useMemo(() => {
+    return [...movies]
+      .filter((movie) => isComingSoonMovie(movie, currentTime))
+      .sort((left, right) => {
+        const leftRelease = left.releaseDateValue ? new Date(left.releaseDateValue).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightRelease = right.releaseDateValue ? new Date(right.releaseDateValue).getTime() : Number.MAX_SAFE_INTEGER;
+        return leftRelease - rightRelease;
+      })
+      .slice(0, 3);
+  }, [movies, currentTime]);
+
+  useEffect(() => {
+    const tick = () => setCurrentTime(Date.now());
+    tick();
+
+    const intervalId = window.setInterval(tick, 24 * 60 * 60 * 1000);
+    const handleFocus = () => {
+      tick();
+      void mutate();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+        void mutate();
+      }
+    };
+    const handleMovieCatalogUpdate = () => {
+      tick();
+      void mutate();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("movie-catalog-updated", handleMovieCatalogUpdate as EventListener);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("movie-catalog-updated", handleMovieCatalogUpdate as EventListener);
+    };
+  }, [mutate]);
+
   return (
-    <section className="py-20 bg-black">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Section Header */}
+    <section className="bg-black py-20">
+      <div className="mx-auto max-w-7xl px-6">
         <div className="mb-12">
-          <h2 className="text-4xl font-bold mb-4">Coming Soon</h2>
-          <p className="text-zinc-400 text-lg">Get notified when these movies hit the big screen</p>
+          <h2 className="mb-4 text-4xl font-bold">Coming Soon</h2>
+          <p className="text-lg text-zinc-400">Get notified when these movies hit the big screen</p>
         </div>
 
-        {/* Movies List */}
-        <div className="space-y-6">
-          {upcomingMovies.map((movie, index) => (
-            <div
-              key={index}
-              className="group relative bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-red-500/50 transition-all hover:shadow-xl hover:shadow-red-500/10"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Movie Poster */}
-                <div className="relative aspect-video md:aspect-auto overflow-hidden">
-                  <img
-                    src={movie.image}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-zinc-900/50"></div>
-                </div>
-
-                {/* Movie Info */}
-                <div className="md:col-span-2 p-6 md:p-8 flex flex-col justify-center">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full w-fit mb-4">
-                    <Calendar className="w-3 h-3 text-red-500" />
-                    <span className="text-sm font-medium text-red-500">{movie.releaseDate}</span>
+        {error ? (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-400">
+            Failed to load upcoming movies.
+          </div>
+        ) : isLoading ? (
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={`coming-soon-skeleton-${index}`}
+                className="h-[16rem] animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/70"
+              />
+            ))}
+          </div>
+        ) : comingSoonMovies.length === 0 ? (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-400">
+            No upcoming movies found.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {comingSoonMovies.map((movie) => (
+              <article
+                key={movie.id}
+                className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-all hover:border-red-500/50 hover:shadow-xl hover:shadow-red-500/10"
+              >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                  <div className="relative aspect-video overflow-hidden md:aspect-auto">
+                    <ImageWithFallback
+                      src={movie.image || "/placeholder.png"}
+                      alt={movie.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-zinc-900/50" />
                   </div>
 
-                  <h3 className="text-3xl font-bold mb-2 group-hover:text-red-500 transition-colors">
-                    {movie.title}
-                  </h3>
-                  <p className="text-zinc-400 mb-4">{movie.genre}</p>
-                  <p className="text-zinc-300 text-lg mb-6 leading-relaxed">
-                    {movie.description}
-                  </p>
+                  <div className="flex flex-col justify-center p-6 md:col-span-2 md:p-8">
+                    <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1">
+                      <Calendar className="h-3 w-3 text-red-500" />
+                      <span className="text-sm font-medium text-red-500">Coming Soon</span>
+                    </div>
 
-                  <div className="flex flex-wrap gap-4">
-                    <ButtonRed className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium hover:shadow-lg hover:shadow-red-500/30 transition-all">
-                      <Bell className="w-4 h-4" />
-                      Notify Me
-                    </ButtonRed>
-                    <ButtonGray className="px-6 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 rounded-lg font-medium transition-all">
-                      More Info
-                    </ButtonGray>
+                    <h3 className="mb-2 text-3xl font-bold transition-colors group-hover:text-red-500">
+                      {movie.title}
+                    </h3>
+                    <p className="mb-3 text-sm text-zinc-500">{movie.releaseDate}</p>
+                    <p className="mb-4 text-zinc-400">{movie.genre}</p>
+                    <p className="mb-6 text-lg leading-relaxed text-zinc-300">
+                      {movie.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-4">
+                      <Link
+                        href={movie.id ? getMovieDetailsHref(movie.id) : "/customer/movies"}
+                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-6 py-3 font-medium transition-all hover:shadow-lg hover:shadow-red-500/30"
+                      >
+                        View Details
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

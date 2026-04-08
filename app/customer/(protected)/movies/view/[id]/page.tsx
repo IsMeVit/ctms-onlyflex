@@ -2,23 +2,194 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, Film, Heart, MapPin, Play, Share2, Star, Users } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Film,
+  Heart,
+  Play,
+  Star,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { ButtonRed } from "@/components/ui/ButtonRed";
 import ButtonGray from "@/components/ui/ButtonGray";
+import { Card } from "@/components/ui/Card";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
+import { isFavoriteMovie, toggleFavoriteMovie } from "@/lib/favorite-movies";
+import { canRateMovie, getRatingEligibilityMessage } from "@/lib/rating-eligibility";
+import { getNextShowingLabel, getUpcomingShowtimes } from "@/lib/movie-availability";
 
-const theaters = [
-  { id: 1, name: "OnlyFlix Central", address: "Norodom Blvd, Phnom Penh" },
-  { id: 2, name: "OnlyFlix Riverside", address: "Sisowath Quay, Phnom Penh" },
-  { id: 3, name: "OnlyFlix Sen Sok", address: "Street 2004, Phnom Penh" },
-];
+type RatingBooking = {
+  id: string;
+  isScanned: boolean;
+  isRated: boolean;
+  showtime: {
+    startTime: string;
+    movie: {
+      id: string;
+      title: string;
+      duration?: number | null;
+    };
+  };
+};
 
 export default function MovieDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
+  const [isRatingLoading, setIsRatingLoading] = useState(true);
+  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
+  const [ratingMessage, setRatingMessage] = useState("");
+  const [ratingValue, setRatingValue] = useState(5);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingSuccess, setRatingSuccess] = useState("");
   const { data: movie, error, isLoading } = CustomerMovieService.FetchById(params.id);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadEligibility = async () => {
+      if (!movie?.id) {
+        return;
+      }
+
+      setIsRatingLoading(true);
+      setRatingError("");
+      setRatingSuccess("");
+
+      try {
+        const response = await fetch(
+          `/api/customer/booking?movieId=${encodeURIComponent(movie.id)}&limit=50`,
+          { credentials: "include" },
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to load rating eligibility");
+        }
+
+        const bookings: RatingBooking[] = Array.isArray(payload?.bookings) ? payload.bookings : [];
+        const alreadyRated = bookings.some((booking) => booking.isRated);
+        const eligibleBooking = bookings.find((booking) =>
+          canRateMovie({
+            showtimeStart: booking?.showtime?.startTime,
+            duration: movie?.durationMinutes,
+            isScanned: booking?.isScanned,
+            isRated: booking?.isRated,
+          }),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (alreadyRated) {
+          setEligibleBookingId(null);
+          setRatingMessage("You already rated this movie.");
+        } else if (eligibleBooking) {
+          setEligibleBookingId(eligibleBooking.id);
+          setRatingMessage(
+            getRatingEligibilityMessage({
+              showtimeStart: eligibleBooking?.showtime?.startTime,
+              duration: movie?.durationMinutes,
+              isScanned: eligibleBooking?.isScanned,
+              isRated: eligibleBooking?.isRated,
+            }),
+          );
+        } else if (bookings.length > 0) {
+          setEligibleBookingId(null);
+          setRatingMessage(
+            getRatingEligibilityMessage({
+              showtimeStart: bookings[0]?.showtime?.startTime,
+              duration: movie?.durationMinutes,
+              isScanned: bookings[0]?.isScanned,
+              isRated: bookings[0]?.isRated,
+            }),
+          );
+        } else {
+          setEligibleBookingId(null);
+          setRatingMessage("You can rate this movie after the show ends.");
+        }
+      } catch (loadError) {
+        if (!mounted) {
+          return;
+        }
+        setEligibleBookingId(null);
+        setRatingMessage("");
+        setRatingError(loadError instanceof Error ? loadError.message : "Failed to load rating eligibility");
+      } finally {
+        if (mounted) {
+          setIsRatingLoading(false);
+        }
+      }
+    };
+
+    void loadEligibility();
+
+    return () => {
+      mounted = false;
+    };
+  }, [movie?.id, movie?.durationMinutes]);
+
+  useEffect(() => {
+    if (!movie?.id) {
+      setIsLiked(false);
+      return;
+    }
+
+    const syncFavoriteState = () => {
+      setIsLiked(isFavoriteMovie(movie.id));
+    };
+
+    syncFavoriteState();
+    window.addEventListener("favorite-movies-updated", syncFavoriteState);
+    window.addEventListener("storage", syncFavoriteState);
+
+    return () => {
+      window.removeEventListener("favorite-movies-updated", syncFavoriteState);
+      window.removeEventListener("storage", syncFavoriteState);
+    };
+  }, [movie?.id]);
+
+  const handleSubmitRating = async () => {
+    if (!eligibleBookingId) {
+      return;
+    }
+
+    setRatingSubmitting(true);
+    setRatingError("");
+
+    try {
+      const response = await fetch("/api/customer/rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          bookingId: eligibleBookingId,
+          rating: ratingValue,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to save rating");
+      }
+
+      setRatingSuccess(payload?.message || "Thanks! Your rating was saved.");
+      setEligibleBookingId(null);
+      setRatingMessage("You already rated this movie.");
+      setShowRatingModal(false);
+    } catch (submitError) {
+      setRatingError(submitError instanceof Error ? submitError.message : "Failed to save rating");
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -112,28 +283,135 @@ export default function MovieDetailPage() {
                 </ButtonRed>
                 <ButtonGray
                   type="button"
-                  onClick={() => setIsLiked((value) => !value)}
-                  className={`rounded-lg border-2 p-4 transition-all ${
+                  onClick={() => {
+                    if (!movie?.id) {
+                      return;
+                    }
+
+                    setIsLiked(toggleFavoriteMovie(movie.id));
+                  }}
+                  className={`inline-flex items-center justify-center rounded-lg border-2 p-4 transition-all ${
                     isLiked
-                      ? "border-red-500 bg-red-500"
-                      : "border-zinc-700 bg-zinc-900 hover:border-zin-500"
+                      ? "border-red-500 bg-red-500 text-white hover:border-red-500 hover:bg-red-500"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-zin-500 hover:bg-zinc-800"
                   }`}
+                  aria-pressed={isLiked}
                   aria-label={isLiked ? "Remove from favorites" : "Add to favorites"}
                 >
-                  <Heart className={`h-5 w-5 ${isLiked ? "fill-white" : ""}`} />
+                  <Heart className={`h-5 w-5 ${isLiked ? "fill-white text-white" : ""}`} />
                 </ButtonGray>
-                <ButtonGray
-                  type="button"
-                  className="rounded-lg border-2 border-zinc-700 bg-zinc-900 p-4 transition-all hover:border-zin-500"
-                  aria-label="Share movie"
-                >
-                  <Share2 className="h-5 w-5" />
-                </ButtonGray>
+               
+                {isRatingLoading ? (
+                  <ButtonGray
+                    type="button"
+                    disabled
+                    className="rounded-lg border-2 border-zinc-700 bg-zinc-900 px-5 py-4 text-lg"
+                  >
+                    Checking rating...
+                  </ButtonGray>
+                ) : eligibleBookingId && !ratingSuccess ? (
+                  <ButtonRed
+                    type="button"
+                    onClick={() => setShowRatingModal(true)}
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-6 py-4 text-lg font-bold transition-all hover:shadow-lg hover:shadow-red-500/30"
+                  >
+                    <Star className="h-5 w-5 fill-white" />
+                    Rate Movie
+                  </ButtonRed>
+                ) : (
+                  <ButtonGray
+                    type="button"
+                    disabled
+                    className="inline-flex items-center justify-center rounded-lg border-2 border-orange-500/50 bg-zinc-900 p-4 text-orange-400 transition-colors"
+                    aria-label="Rate Locked"
+                    title="Rate Locked"
+                  >
+                    <Star className="h-5 w-5" />
+                    <span className="sr-only">{ratingSuccess ? "Rated" : "Rate Locked"}</span>
+                  </ButtonGray>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {ratingMessage ? (
+                  <p className="text-sm text-zinc-400">{ratingMessage}</p>
+                ) : null}
+                {ratingSuccess ? (
+                  <p className="text-sm text-emerald-400">{ratingSuccess}</p>
+                ) : null}
+                {ratingError ? (
+                  <p className="text-sm text-red-400">{ratingError}</p>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {showRatingModal && eligibleBookingId ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <Card className="w-full max-w-md border-zinc-800 bg-zinc-950 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-zinc-500">Rate Movie</p>
+                <h3 className="mt-2 text-2xl font-bold text-white">{movie.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRatingModal(false)}
+                className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-white"
+                aria-label="Close rating dialog"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <p className="text-sm text-zinc-400">
+                Pick a score from 1 to 5 stars. Your rating will be saved to this movie.
+              </p>
+
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((score) => (
+                  <button
+                    key={score}
+                    type="button"
+                    onClick={() => setRatingValue(score)}
+                    className="rounded-full p-1 transition-transform hover:scale-110"
+                    aria-label={`Set rating to ${score} star${score > 1 ? "s" : ""}`}
+                  >
+                    <Star
+                      className={`h-8 w-8 ${
+                        score <= ratingValue
+                          ? "fill-yellow-500 text-yellow-500"
+                          : "text-zinc-700"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <ButtonGray
+                  type="button"
+                  onClick={() => setShowRatingModal(false)}
+                  className="flex-1 rounded-xl bg-zinc-800 py-3 text-base"
+                >
+                  Cancel
+                </ButtonGray>
+                <ButtonRed
+                  type="button"
+                  onClick={() => void handleSubmitRating()}
+                  disabled={ratingSubmitting}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-red-700 py-3 text-base font-bold"
+                >
+                  {ratingSubmitting ? "Saving..." : "Submit Rating"}
+                </ButtonRed>
+              </div>
+            </div>
+          </Card>
+        </div>
+      ) : null}
 
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -182,8 +460,10 @@ export default function MovieDetailPage() {
                 Choose a showtime and head into booking with fewer clicks.
               </p>
               <div className="space-y-3">
-                {movie.showtimeDetails.length > 0
-                  ? movie.showtimeDetails.slice(0, 6).map((showtime) => (
+                {getUpcomingShowtimes(movie).length > 0
+                  ? getUpcomingShowtimes(movie)
+                      .slice(0, 6)
+                      .map((showtime) => (
                       <Link
                         key={showtime.id}
                         href={`/customer/bookings?showtimeId=${encodeURIComponent(showtime.id)}&movie=${encodeURIComponent(movie.title)}&time=${encodeURIComponent(showtime.time)}&screen=${encodeURIComponent(showtime.screen)}&type=${encodeURIComponent(showtime.type)}`}
@@ -195,32 +475,16 @@ export default function MovieDetailPage() {
                         </div>
                         <span className="text-xs text-zinc-400">Reserve</span>
                       </Link>
-                    ))
-                  : movie.showtimes.map((time, index) => (
-                      <Link
-                        key={`${time}-${index}`}
-                        href={`/customer/bookings?movie=${encodeURIComponent(movie.title)}&time=${encodeURIComponent(time)}`}
-                        className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 transition-all hover:border-red-500 hover:bg-zinc-900"
-                      >
-                        <span className="font-semibold">{time}</span>
-                        <span className="text-xs text-zinc-400">Reserve</span>
-                      </Link>
-                    ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
-              <h3 className="mb-3 text-lg font-semibold">Available Theaters</h3>
-              <div className="space-y-3">
-                {theaters.map((theater) => (
-                  <div key={theater.id} className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
-                    <div className="mb-1 flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-red-400" />
-                      <span className="font-medium">{theater.name}</span>
-                    </div>
-                    <p className="text-sm text-zinc-500">{theater.address}</p>
-                  </div>
-                ))}
+                      ))
+                  : getNextShowingLabel(movie) ? (
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
+                        Next showing: {getNextShowingLabel(movie)}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-400">
+                        No future showtimes available yet.
+                      </div>
+                    )}
               </div>
             </div>
           </aside>

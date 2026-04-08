@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Seat } from '@/types/seat';
 import { SeatCell } from './SeatCell';
 import { ScreenIndicator } from './ScreenIndicator';
@@ -13,7 +13,6 @@ interface SeatGridProps {
   selectedSeats: Set<string>;
   viewMode: 'admin' | 'preview';
   hallName?: string;
-  isDragging: boolean;
   onSeatClick: (seat: Seat, event: React.MouseEvent) => void;
   onMouseDown: (seat: Seat) => void;
   onMouseEnter: (seat: Seat) => void;
@@ -40,7 +39,6 @@ export function SeatGrid({
   selectedSeats,
   viewMode,
   hallName,
-  isDragging,
   onSeatClick,
   onMouseDown,
   onMouseEnter,

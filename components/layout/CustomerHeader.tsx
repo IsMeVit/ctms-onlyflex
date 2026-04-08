@@ -2,13 +2,13 @@
 
 import {
   Film,
+  Heart,
   User,
   Ticket,
   Menu,
   X,
   Settings,
   UserCircle,
-  Lock,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -58,8 +58,8 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
       case "account":
         router.push("/customer/profile");
         break;
-      case "password":
-        router.push("/login?callbackUrl=/customer/profile");
+      case "favorites":
+        router.push("/customer/favorite");
         break;
       case "signout":
         logout();
@@ -75,15 +75,24 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
   };
 
   useEffect(() => {
-    const currentRef = settingsRef.current;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (currentRef && !currentRef.contains(event.target as Node)) {
+    const handlePointerDownOutside = (event: PointerEvent) => {
+      const menuRoot = settingsRef.current;
+      if (menuRoot && !menuRoot.contains(event.target as Node)) {
         setIsSettingsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDownOutside);
+    document.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
@@ -100,7 +109,7 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
               <Film className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-xl">CineMax</h1>
+              <h1 className="font-bold text-xl">OnlyFlix</h1>
               <p className="text-xs text-zinc-500">Premium Cinema</p>
             </div>
           </button>
@@ -111,7 +120,7 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`text-sm font-medium transition-colors cursor-pointer ${
+                className={`text-md font-medium transition-colors cursor-pointer ${
                   currentPage === item.id
                     ? 'text-red-500'
                     : 'text-white hover:text-red-500'
@@ -135,7 +144,18 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
                   My Tickets
                 </button>
 
-                <div ref={settingsRef} className="relative hidden md:block">
+                <div
+                  ref={settingsRef}
+                  className="relative hidden md:block"
+                  onBlurCapture={(event) => {
+                    const nextTarget = event.relatedTarget as Node | null;
+                    if (nextTarget && event.currentTarget.contains(nextTarget)) {
+                      return;
+                    }
+
+                    setIsSettingsOpen(false);
+                  }}
+                >
                   <button
                     onClick={handleSettingsClick}
                     className={`p-2 hover:bg-zinc-900 cursor-pointer rounded-lg transition-colors ${
@@ -146,7 +166,7 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
                     <User className="w-5 h-5 text-zinc-400" />
                   </button>
 
-                  {isSettingsOpen ? (
+                    {isSettingsOpen ? (
                     <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="px-4 py-3 border-b border-zinc-800 bg-zinc-950">
                         <p className="text-sm font-semibold text-white">
@@ -165,20 +185,20 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
                           <div className="flex items-center gap-3">
                             <UserCircle className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
                             <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                              My Account
+                              Profile
                             </span>
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                         </button>
 
                         <button
-                          onClick={() => handleSettingsAction("password")}
+                          onClick={() => handleSettingsAction("favorites")}
                           className="w-full cursor-pointer flex items-center justify-between px-4 py-2.5 hover:bg-zinc-800 transition-colors group"
                         >
                           <div className="flex items-center gap-3">
-                            <Lock className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                            <Heart className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
                             <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                              Change Password
+                              Favorites
                             </span>
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
@@ -241,13 +261,35 @@ export function CustomerHeader({ currentPage, onNavigate, onAdminClick }: Custom
               </button>
             ))}
             {isAuthenticated ? (
-              <button
-                onClick={() => router.push("/customer/ticket")}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium"
-              >
-                <Ticket className="w-4 h-4" />
-                My Tickets
-              </button>
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={() => handleSettingsAction("account")}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    <UserCircle className="w-4 h-4 text-zinc-400" />
+                    Profile
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </button>
+                <button
+                  onClick={() => handleSettingsAction("favorites")}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-zinc-400" />
+                    Favorites
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </button>
+                <button
+                  onClick={() => router.push("/customer/ticket")}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium"
+                >
+                  <Ticket className="w-4 h-4" />
+                  My Tickets
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 <ButtonGray

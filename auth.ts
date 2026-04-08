@@ -50,8 +50,16 @@ export const {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+        const identifier = (credentials.email as string).trim();
+        const emailIdentifier = identifier.toLowerCase();
+        const phoneIdentifier = identifier.replace(/\D/g, "");
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: emailIdentifier },
+              ...(phoneIdentifier ? [{ phone: phoneIdentifier }] : []),
+            ],
+          },
         });
 
         if (!user || !user.password) {
@@ -76,6 +84,8 @@ export const {
           id: user.id,
           email: user.email,
           name: user.name,
+          image: user.image,
+          phone: user.phone,
           role: user.role,
           membershipTier: user.membershipTier,
         };
@@ -104,12 +114,39 @@ export const {
     jwt: async ({ token, user, trigger }) => {
       if (user) {
         token.id = user.id;
+        token.name = user.name ?? undefined;
+        token.email = user.email ?? undefined;
+        token.picture = user.image ?? undefined;
+        token.phone = user.phone ?? undefined;
         token.role = user.role;
         token.membershipTier = user.membershipTier;
         token.lastActivity = Date.now();
       }
-      
-      // Update last activity on every token use
+
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            phone: true,
+            role: true,
+            membershipTier: true,
+          },
+        });
+
+        if (dbUser) {
+          token.name = dbUser.name ?? undefined;
+          token.email = dbUser.email ?? undefined;
+          token.picture = dbUser.image ?? undefined;
+          token.phone = dbUser.phone ?? undefined;
+          token.role = dbUser.role;
+          token.membershipTier = dbUser.membershipTier;
+        }
+      }
+
       if (trigger === "update") {
         token.lastActivity = Date.now();
       }
@@ -119,6 +156,10 @@ export const {
     session: async ({ session, token }) => {
       if (token) {
         session.user.id = token.id as string;
+        session.user.name = (token.name as string | null | undefined) ?? undefined;
+        session.user.email = (token.email as string | null | undefined) ?? undefined;
+        session.user.image = (token.picture as string | null | undefined) ?? undefined;
+        session.user.phone = (token.phone as string | null | undefined) ?? undefined;
         session.user.role = token.role as string;
         session.user.membershipTier = token.membershipTier as string;
         session.user.lastActivity = token.lastActivity as number;

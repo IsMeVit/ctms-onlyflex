@@ -19,6 +19,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   avatarUrl?: string;
 }
 
@@ -29,6 +30,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshSession: () => Promise<void>;
   updateAvatar?: (fileOrBase64: File | string) => Promise<void>;
 }
 
@@ -45,7 +47,7 @@ export const useAuth = () => {
 };
 
 function AuthStateProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [avatarOverride, setAvatarOverride] = useState<string>();
 
   const user = useMemo<User | null>(() => {
@@ -57,6 +59,7 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
       id: session.user.id,
       name: session.user.name || session.user.email,
       email: session.user.email,
+      phone: session.user.phone || undefined,
       avatarUrl: avatarOverride || session.user.image || undefined,
     };
   }, [avatarOverride, session]);
@@ -77,6 +80,12 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
     void signOut({ callbackUrl: "/" });
   };
 
+  const refreshSession = async () => {
+    if (update) {
+      await update();
+    }
+  };
+
   const updateAvatar = async (fileOrBase64: File | string) => {
     if (typeof fileOrBase64 === "string") {
       setAvatarOverride(fileOrBase64);
@@ -95,6 +104,7 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
         isLoading: status === "loading",
         login,
         logout,
+        refreshSession,
         updateAvatar,
       }}
     >
