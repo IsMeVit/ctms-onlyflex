@@ -19,15 +19,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { 
           message: "Admin user already exists",
-          email: "admin@movietickets.com",
-          password: "admin123"
+          email: process.env.ADMIN_EMAIL || "admin@movietickets.com",
+          password: process.env.ADMIN_PASSWORD || "admin123"
         },
         { status: 200 }
       );
     }
 
     // Create admin user
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const admin = await prisma.user.create({
       data: {
@@ -42,8 +43,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         message: "Admin user created successfully",
-        email: "admin@movietickets.com",
-        password: "admin123",
+        email: process.env.ADMIN_EMAIL || "admin@movietickets.com",
+        password: adminPassword,
         userId: admin.id
       },
       { status: 201 }
