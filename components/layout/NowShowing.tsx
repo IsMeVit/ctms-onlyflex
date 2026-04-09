@@ -13,7 +13,7 @@ import {
   getNowShowingSortTimestamp,
   getTodaysUpcomingShowtimes,
 } from "@/lib/movie-availability";
-import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 
 export function NowShowing() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Clock, Star } from "lucide-react";
-import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
+import Image from "next/image";
 import {
   getMovieAvailabilityState,
   getNextShowingLabel,
