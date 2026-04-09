@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import CustomerTicketService from "@/components/services/CustomerTicketService";
+import CustomerTicketService, { type TicketWithBooking } from "@/components/services/CustomerTicketService";
 import Image from "next/image";
+import { getTicketLifecycleState, type TicketLifecycleState } from "@/lib/ticket-status";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -19,28 +20,63 @@ const timeFormatter = new Intl.DateTimeFormat("en-US", {
 function StatusBadge({ status }: { status?: string }) {
   const s = (status || "").toLowerCase();
   const base = "px-2 py-1 rounded-full text-xs font-medium";
-  if (s === "reserved" || s === "confirmed" || s === "active") return <span className={`${base} bg-green-600 text-white`}>Active</span>;
+  if (s === "reserved" || s === "confirmed" || s === "active" || s === "towatch")
+    return <span className={`${base} bg-green-600 text-white`}>Active</span>;
   if (s === "used") return <span className={`${base} bg-zinc-600 text-white`}>Used</span>;
+  if (s === "expired") return <span className={`${base} bg-amber-600 text-white`}>Expired</span>;
   if (s === "cancelled" || s === "canceled") return <span className={`${base} bg-red-600 text-white`}>Cancelled</span>;
   return <span className={`${base} bg-zinc-600 text-white`}>{status}</span>;
 }
 
 type Tab = "towatch" | "used";
+type TicketView = TicketWithBooking & { lifecycleState: TicketLifecycleState };
 
 export default function MyTickets() {
   const { data, error, isLoading } = CustomerTicketService.FetchAll();
   const [activeTab, setActiveTab] = useState<Tab>("towatch");
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
-  const allTickets = useMemo(() => (data as any[]) || [], [data]);
+  const allTickets = useMemo<TicketWithBooking[]>(() => data || [], [data]);
+  const tick = () => setCurrentTime(Date.now());
+
+  useEffect(() => {
+    tick();
+
+    const intervalId = window.setInterval(tick, 5 * 60 * 1000);
+    const handleFocus = () => tick();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  const ticketsWithState = useMemo<TicketView[]>(
+    () =>
+      allTickets.map((ticket) => ({
+        ...ticket,
+        lifecycleState: getTicketLifecycleState(ticket, currentTime),
+      })),
+    [allTickets, currentTime],
+  );
 
   const toWatchTickets = useMemo(
-    () => allTickets.filter((t) => ["reserved", "confirmed"].includes((t.status || "").toLowerCase())),
-    [allTickets]
+    () => ticketsWithState.filter((ticket) => ticket.lifecycleState === "towatch"),
+    [ticketsWithState]
   );
 
   const usedTickets = useMemo(
-    () => allTickets.filter((t) => (t.status || "").toLowerCase() === "used"),
-    [allTickets]
+    () => ticketsWithState.filter((ticket) => ticket.lifecycleState === "used" || ticket.lifecycleState === "expired"),
+    [ticketsWithState]
   );
 
   const displayedTickets = activeTab === "towatch" ? toWatchTickets : usedTickets;
@@ -109,12 +145,13 @@ export default function MyTickets() {
       )}
 
       {/* Ticket list */}
-      <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {displayedTickets.map((ticket: any) => {
-          const movie = ticket?.booking?.showtime?.movie || {};
-          const screen = ticket?.booking?.showtime?.hall;
-          const startTime = ticket?.booking?.showtime?.startTime;
-          const status = ticket?.status || "active";
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {displayedTickets.map((ticket) => {
+          const movie = ticket.booking?.showtime?.movie || {};
+          const screen = ticket.booking?.showtime?.hall;
+          const startTime = ticket.booking?.showtime?.startTime;
+          const status = ticket.lifecycleState || ticket.status || "active";
+          const hallName = typeof screen === "string" ? screen : screen?.name || "—";
 
           return (
             <div key={ticket.id} className="bg-zinc-800 rounded-2xl overflow-hidden">
@@ -137,14 +174,14 @@ export default function MyTickets() {
                   <div className="text-sm text-zinc-300 space-y-1 mt-1">
                     <div className="grid grid-cols-[70px_1fr]">
                       <span className="text-zinc-400">Hall:</span>
-                      <span>{typeof screen === "object" ? (screen as any)?.name : screen || "—"}</span>
+                      <span>{hallName}</span>
                     </div>
                     <div className="grid grid-cols-[70px_1fr]">
                       <span className="text-zinc-400">Seat:</span>
                       <span>
-                        {ticket?.booking?.tickets
-                          ?.map((t: any) => `${t.seat?.row}${t.seat?.seatNumber}`)
-                          .join(", ") || `${ticket?.seat?.row}${ticket?.seat?.seatNumber}`}
+                        {ticket.booking?.tickets
+                          ?.map((t) => `${t.seat?.row}${t.seat?.seatNumber}`)
+                          .join(", ") || `${ticket.seat?.row}${ticket.seat?.seatNumber}`}
                       </span>
                     </div>
                     <div className="grid grid-cols-[70px_1fr]">
@@ -179,7 +216,7 @@ export default function MyTickets() {
                 <div className="flex items-center gap-3">
                   <StatusBadge status={status} />
                   <span className="text-white font-bold text-lg">
-                    ${parseFloat(ticket?.booking?.finalAmount || ticket?.finalPrice || "0").toFixed(2)}
+                    ${parseFloat(String(ticket.booking?.finalAmount || ticket.finalPrice || "0")).toFixed(2)}
                   </span>
                 </div>
               </div>

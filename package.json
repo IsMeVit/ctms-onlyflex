@@ -3,15 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "npx prisma generate && next build",
-    "start": "next start",
+    "dev": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next dev",
+    "build": "next build",
+    "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "node --import dotenv/config --import tsx scripts/seed-admin.ts",
-    "db:seed:frontdesk": "node --import dotenv/config --import tsx scripts/seed-front-desk.ts",
-    "studio": "prisma studio --url postgresql://postgres:admin234@localhost:5432/moviedb"
+    "db:seed": "node --import dotenv/config --import tsx scripts/seed-admin.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -38,6 +36,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",

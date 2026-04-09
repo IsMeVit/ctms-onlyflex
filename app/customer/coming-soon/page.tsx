@@ -1,34 +1,77 @@
 "use client";
 
-import { Bell, Calendar } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, Calendar } from "lucide-react";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
 import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
-
-function parseReleaseDate(value: string) {
-  const timestamp = new Date(value).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
+import { getMovieDetailsHref, isComingSoonMovie } from "@/lib/movie-availability";
 
 export default function ComingSoonPage() {
-  const { data, error, isLoading } = CustomerMovieService.FetchAll({
-    limit: 50,
-    sortBy: "releaseDate",
-    sortOrder: "desc",
-  });
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const { data, error, isLoading, mutate } = CustomerMovieService.FetchAll(
+    {
+      limit: 100,
+      sortBy: "releaseDate",
+      sortOrder: "asc",
+    },
+    {
+      refreshInterval: 24 * 60 * 60 * 1000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    },
+  );
 
-  const movies = [...(data?.movies || [])]
-    .sort((a, b) => parseReleaseDate(b.releaseDate) - parseReleaseDate(a.releaseDate))
-    .slice(0, 5);
+  const movies = useMemo(() => {
+    return [...(data?.movies || [])]
+      .filter((movie) => isComingSoonMovie(movie, currentTime))
+      .sort((left, right) => {
+        const leftRelease = left.releaseDateValue ? new Date(left.releaseDateValue).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightRelease = right.releaseDateValue ? new Date(right.releaseDateValue).getTime() : Number.MAX_SAFE_INTEGER;
+        return leftRelease - rightRelease;
+      })
+      .slice(0, 5);
+  }, [data?.movies, currentTime]);
+
+  useEffect(() => {
+    const tick = () => setCurrentTime(Date.now());
+    tick();
+
+    const intervalId = window.setInterval(tick, 24 * 60 * 60 * 1000);
+    const handleFocus = () => {
+      tick();
+      void mutate();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+        void mutate();
+      }
+    };
+    const handleMovieCatalogUpdate = () => {
+      tick();
+      void mutate();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("movie-catalog-updated", handleMovieCatalogUpdate as EventListener);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("movie-catalog-updated", handleMovieCatalogUpdate as EventListener);
+    };
+  }, [mutate]);
 
   return (
     <div className="min-h-screen bg-black pt-24 text-white">
       <section className="bg-black py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="mx-auto max-w-7xl px-6">
           <div className="mb-12">
-            <h2 className="text-4xl font-bold mb-4">Coming Soon</h2>
-            <p className="text-zinc-400 text-lg">
-              Get notified when these movies hit the big screen
-            </p>
+            <h2 className="mb-4 text-4xl font-bold">Coming Soon</h2>
+            <p className="text-lg text-zinc-400">Get notified when these movies hit the big screen</p>
           </div>
 
           {isLoading ? (
@@ -48,46 +91,40 @@ export default function ComingSoonPage() {
               {movies.map((movie) => (
                 <div
                   key={movie.id}
-                  className="group relative bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-red-500/50 transition-all hover:shadow-xl hover:shadow-red-500/10"
+                  className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-all hover:border-red-500/50 hover:shadow-xl hover:shadow-red-500/10"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="relative aspect-video md:aspect-auto overflow-hidden">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div className="relative aspect-video overflow-hidden md:aspect-auto">
                       <ImageWithFallback
                         src={movie.image}
                         alt={movie.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-zinc-900/50"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-zinc-900/50" />
                     </div>
 
-                    <div className="md:col-span-2 p-6 md:p-8 flex flex-col justify-center">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full w-fit mb-4">
-                        <Calendar className="w-3 h-3 text-red-500" />
-                        <span className="text-sm font-medium text-red-500">{movie.releaseDate}</span>
+                    <div className="flex flex-col justify-center p-6 md:col-span-2 md:p-8">
+                      <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1">
+                        <Calendar className="h-3 w-3 text-red-500" />
+                        <span className="text-sm font-medium text-red-500">Coming Soon</span>
                       </div>
 
-                      <h3 className="text-3xl font-bold mb-2 group-hover:text-red-500 transition-colors">
+                      <h3 className="mb-2 text-3xl font-bold transition-colors group-hover:text-red-500">
                         {movie.title}
                       </h3>
-                      <p className="text-zinc-400 mb-4">{movie.genre}</p>
-                      <p className="text-zinc-300 text-lg mb-6 leading-relaxed">
+                      <p className="mb-4 text-zinc-400">{movie.genre}</p>
+                      <p className="mb-6 text-lg leading-relaxed text-zinc-300">
                         {movie.description}
                       </p>
 
                       <div className="flex flex-wrap gap-4">
-                        <button
-                          type="button"
-                          className="flex cursor-pointer items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium hover:shadow-lg hover:shadow-red-500/30 transition-all"
+                        <Link
+                          href={getMovieDetailsHref(movie.id)}
+                          className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-6 py-3 font-medium transition-all hover:shadow-lg hover:shadow-red-500/30"
                         >
-                          <Bell className="w-4 h-4" />
-                          Notify Me
-                        </button>
-                        <button
-                          type="button"
-                          className="px-6 cursor-pointer py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 rounded-lg font-medium transition-all"
-                        >
-                          More Info
-                        </button>
+                          View Details
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
                       </div>
                     </div>
                   </div>

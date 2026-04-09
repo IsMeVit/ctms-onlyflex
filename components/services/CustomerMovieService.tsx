@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { type SWRConfiguration } from "swr";
 import apiService from "./apiService/apiService";
 import { getNowShowingMovieById } from "@/lib/now-showing-movies";
 
@@ -85,6 +85,7 @@ export type CustomerMovie = {
   status: string;
   showtimeCount: number;
   showtimeDetails: CustomerMovieShowtime[];
+  releaseDateValue: string | null;
 };
 
 function formatDuration(duration?: number | null) {
@@ -199,6 +200,7 @@ function normalizeMovie(movie: AdminMovie): CustomerMovie {
     status: movie.status || "RELEASED",
     showtimeCount: movie._count?.showtimes || 0,
     showtimeDetails,
+    releaseDateValue: movie.releaseDate || null,
   };
 }
 
@@ -226,7 +228,7 @@ async function fetchMovie(url: string) {
 }
 
 const CustomerMovieService = {
-  FetchAll: (params: FetchAllParams = {}) => {
+  FetchAll: (params: FetchAllParams = {}, config?: SWRConfiguration) => {
     const query: string[] = [];
 
     if (params.page) query.push(`page=${params.page}`);
@@ -237,7 +239,7 @@ const CustomerMovieService = {
     if (params.sortOrder) query.push(`sortOrder=${encodeURIComponent(params.sortOrder)}`);
 
     const url = path + (query.length ? `?${query.join("&")}` : "");
-    return useSWR(url, fetchMovieList);
+    return useSWR(url, fetchMovieList, config);
   },
 
   FetchById: (id?: string) => {

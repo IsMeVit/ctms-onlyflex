@@ -188,6 +188,8 @@ model Booking {
   totalDiscount Decimal       @db.Decimal(10, 2)
   finalAmount   Decimal       @db.Decimal(10, 2)
   bookingStatus BookingStatus @default(PENDING)
+  isScanned     Boolean       @default(false)
+  isRated       Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   showtime      Showtime      @relation(fields: [showtimeId], references: [id])

@@ -1,5 +1,15 @@
+"use client";
+
 import Link from "next/link";
-import { Star, Clock } from "lucide-react";
+import { useState } from "react";
+import { Clock, Star } from "lucide-react";
+import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
+import {
+  getMovieAvailabilityState,
+  getNextShowingLabel,
+  getTodaysUpcomingShowtimes,
+} from "@/lib/movie-availability";
+import type { CustomerMovieShowtime } from "@/components/services/CustomerMovieService";
 
 interface Movie {
   id?: string;
@@ -9,6 +19,8 @@ interface Movie {
   duration?: string;
   image?: string;
   showtimes?: string[];
+  showtimeDetails?: CustomerMovieShowtime[];
+  releaseDateValue?: string | null;
   certification?: string;
 }
 
@@ -16,12 +28,10 @@ interface BaseMovieCardProps {
   movie: Movie;
   href?: string;
   onClick?: () => void;
-  onBookNow?: () => void;
   onShowtimeClick?: (time: string) => void;
   className?: string;
   imageAspectClassName?: string;
   contentClassName?: string;
-  showBookNowButton?: boolean;
   showShowtimes?: boolean;
   showCertification?: boolean;
 }
@@ -30,71 +40,74 @@ export default function BaseMovieCard({
   movie,
   href,
   onClick,
-  onBookNow,
   onShowtimeClick,
   className = "",
-  imageAspectClassName = "aspect-[4/4]",
+  imageAspectClassName = "aspect-[3/4]",
   contentClassName = "p-5",
-  showBookNowButton = true,
   showShowtimes = true,
   showCertification = true,
 }: BaseMovieCardProps) {
-  const showtimes = movie.showtimes || [];
-  const hasShowtimes = showShowtimes && showtimes.length > 0;
+  const [currentTime] = useState(() => Date.now());
+  const availabilityState = getMovieAvailabilityState(
+    { showtimeDetails: movie.showtimeDetails ?? [], releaseDateValue: movie.releaseDateValue ?? null },
+    currentTime,
+  );
+  const todaysShowtimes = getTodaysUpcomingShowtimes(
+    { showtimeDetails: movie.showtimeDetails ?? [] },
+    currentTime,
+  );
+  const nextShowingLabel = getNextShowingLabel(
+    { showtimeDetails: movie.showtimeDetails ?? [] },
+    currentTime,
+  );
+  const showtimeButtons = todaysShowtimes.map((showtime) => showtime.time);
+  const hasShowtimes = showShowtimes && showtimeButtons.length > 0;
+  const shouldShowComingSoon = availabilityState === "coming-soon";
+  const shouldRenderSchedule = showShowtimes && !shouldShowComingSoon;
   const cardContent = (
     <>
       <div className={`relative overflow-hidden ${imageAspectClassName}`}>
-        <img
+        <ImageWithFallback
           src={movie.image || "/placeholder.png"}
           alt={movie.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
         {typeof movie.rating === "number" ? (
-          <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1.5 bg-black/80 backdrop-blur-sm rounded-lg">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="font-semibold text-sm">{movie.rating}</span>
+          <div className="absolute right-4 top-4 flex items-center gap-1 rounded-lg bg-black/80 px-3 py-1.5 backdrop-blur-sm">
+            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+            <span className="text-sm font-semibold">{movie.rating}</span>
           </div>
         ) : null}
 
-        {showCertification && movie.certification ? (
-          <div className="absolute top-4 left-4 px-3 py-1 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg text-xs font-medium">
+        {shouldShowComingSoon ? (
+          <div className="absolute left-4 top-4 rounded-lg bg-red-500/90 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+            Coming Soon
+          </div>
+        ) : showCertification && movie.certification ? (
+          <div className="absolute left-4 top-4 rounded-lg border border-zinc-700 bg-zinc-900/90 px-3 py-1 text-xs font-medium backdrop-blur-sm">
             {movie.certification}
           </div>
-        ) : null}
-
-        {showBookNowButton && onBookNow ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onBookNow();
-            }}
-            className="absolute bottom-4 cursor-pointer left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-700 rounded-lg font-medium opacity-0 group-hover:opacity-800 hover:bg-red-300 transition-all transform translate-y-4 group-hover:translate-y-0"
-          >
-            Book Now
-          </button>
         ) : null}
       </div>
 
       <div className={contentClassName}>
-        <h3 className="font-bold text-lg mb-1 group-hover:text-red-500 transition-colors">
+        <h3 className="mb-1 text-lg font-bold transition-colors group-hover:text-red-500">
           {movie.title}
         </h3>
-        <p className="text-zinc-400 text-sm mb-2">{movie.genre || "Uncategorized"}</p>
+        <p className="mb-2 text-sm text-zinc-400">{movie.genre || "Uncategorized"}</p>
 
-        <div className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
-          <Clock className="w-4 h-4" />
+        <div className="mb-3 flex items-center gap-2 text-sm text-zinc-500">
+          <Clock className="h-4 w-4" />
           <span>{movie.duration || "TBA"}</span>
         </div>
 
-        {hasShowtimes ? (
+        {shouldRenderSchedule && hasShowtimes ? (
           <div className="space-y-1">
-            <p className="text-xs text-zinc-500 font-medium">Showtimes Today</p>
+            <p className="text-xs font-medium text-zinc-500">Showtimes Today</p>
             <div className="flex flex-wrap gap-2">
-              {showtimes.map((time, idx) =>
+              {showtimeButtons.map((time, idx) =>
                 onShowtimeClick ? (
                   <button
                     key={idx}
@@ -104,14 +117,14 @@ export default function BaseMovieCard({
                       event.stopPropagation();
                       onShowtimeClick(time);
                     }}
-                    className="px-3 py-1.5 bg-zinc-800 cursor-pointer hover:bg-red-500 border border-zinc-700 hover:border-red-500 rounded-lg text-xs font-medium transition-all"
+                    className="cursor-pointer rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium transition-all hover:border-red-500 hover:bg-red-500"
                   >
                     {time}
                   </button>
                 ) : (
                   <span
                     key={idx}
-                    className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-xs font-medium"
+                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium"
                   >
                     {time}
                   </span>
@@ -119,13 +132,17 @@ export default function BaseMovieCard({
               )}
             </div>
           </div>
+        ) : shouldRenderSchedule && nextShowingLabel ? (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-zinc-500">Next Showing: {nextShowingLabel}</p>
+          </div>
         ) : null}
       </div>
     </>
   );
 
   const cardClassName =
-    `group relative block bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 hover:border-red-500/50 transition-all hover:shadow-2xl hover:shadow-red-500/20 transform hover:-translate-y-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/70 ${className}`;
+    `group relative block transform cursor-pointer overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-all hover:-translate-y-2 hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500/70 ${className}`;
 
   if (href) {
     return (

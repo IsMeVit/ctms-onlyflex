@@ -1,6 +1,5 @@
 "use client";
 
-import Image from 'next/image';
 import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,8 +7,6 @@ import CustomerMovieService, {
   type CustomerMovie,
   type CustomerMovieShowtime,
 } from '@/components/services/CustomerMovieService';
-
-const DEFAULT_THEATER_NAME = 'OnlyFlex Downtown';
 
 type DateOption = {
   value: string;
@@ -30,12 +27,6 @@ const dayOfWeekFormatter = new Intl.DateTimeFormat('en-US', {
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
-});
-
-const bookingDateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
 });
 
 function getDateKey(value: string | Date) {
@@ -65,9 +56,9 @@ function addDays(date: Date, days: number) {
 
 // Available theaters (fallback/static list)
 const theaters = [
-  { id: 1, name: 'OnlyFlex Central', address: 'Norodom Blvd, Phnom Penh' },
-  { id: 2, name: 'OnlyFlex Riverside', address: 'Sisowath Quay, Phnom Penh' },
-  { id: 3, name: 'OnlyFlex Sen Sok', address: 'Street 2004, Phnom Penh' },
+  { id: 1, name: 'OnlyFlix Central', address: 'Norodom Blvd, Phnom Penh' },
+  { id: 2, name: 'OnlyFlix Riverside', address: 'Sisowath Quay, Phnom Penh' },
+  { id: 3, name: 'OnlyFlix Sen Sok', address: 'Street 2004, Phnom Penh' },
 ];
 
 interface ShowtimesPageProps {
@@ -76,10 +67,12 @@ interface ShowtimesPageProps {
 
 export function ShowtimesPage({ onBookingClick }: ShowtimesPageProps) {
   const router = useRouter();
-  const [selectedTheater, setSelectedTheater] = useState(theaters[0]);
+  const [selectedTheater] = useState(theaters[0]);
   const [selectedDate, setSelectedDate] = useState<DateOption | null>(null);
   const [showtimePageByMovie, setShowtimePageByMovie] = useState<Record<string, number>>({});
   const { data, error, isLoading } = CustomerMovieService.FetchAll();
+  const currentTime = Date.now();
+  const todayKey = getDateKey(new Date());
 
   // Compute date options based on available showtimes and a 7-day window
   const dates = useMemo(() => {
@@ -90,8 +83,8 @@ export function ShowtimesPage({ onBookingClick }: ShowtimesPageProps) {
 
     // Collect showtime date keys from fetched movies (startTime)
     const showtimeKeys = new Set<string>();
-    (data?.movies || []).forEach((movie: any) => {
-      (movie.showtimeDetails || []).forEach((st: any) => {
+    (data?.movies || []).forEach((movie: CustomerMovie) => {
+      (movie.showtimeDetails || []).forEach((st) => {
         if (st.startTime) showtimeKeys.add(getDateKey(st.startTime));
       });
     });
@@ -144,17 +137,19 @@ export function ShowtimesPage({ onBookingClick }: ShowtimesPageProps) {
     if (!selectedDate?.value) return [];
 
     return (data?.movies || [])
-      .map((movie: any) => ({
+      .map((movie: CustomerMovie) => ({
         ...movie,
         // Keep only slots whose startTime falls on the selected date
-        times: (movie.showtimeDetails || []).filter((st: any) => {
+        times: (movie.showtimeDetails || []).filter((st) => {
           if (!st.startTime) return false;
-          return getDateKey(st.startTime) === selectedDate.value;
+          const slotKey = getDateKey(st.startTime);
+          if (slotKey !== selectedDate.value) return false;
+          return slotKey !== todayKey || new Date(st.startTime).getTime() > currentTime;
         }),
       }))
       // Hide movies that have no showtimes on the selected date
-      .filter((movie: any) => movie.times.length > 0);
-  }, [data?.movies, selectedDate]);
+      .filter((movie: MovieWithTimes) => movie.times.length > 0);
+  }, [data?.movies, selectedDate, currentTime, todayKey]);
 
   const handleBookShowtime = (
     movieTitle: string,

@@ -66,7 +66,7 @@ async function resolveShowtime({
     return prisma.showtime.findUnique({
       where: { id: showtimeId },
       include: {
-        movie: { select: { title: true, posterUrl: true } }, // ✅ added posterUrl
+        movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
         hall: { select: { id: true, name: true } },
       },
     });
@@ -87,7 +87,7 @@ async function resolveShowtime({
       },
     },
     include: {
-      movie: { select: { title: true, posterUrl: true } }, // ✅ added posterUrl
+      movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
       hall: { select: { id: true, name: true } },
     },
     orderBy: { startTime: "asc" },
@@ -158,6 +158,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "";
+    const movieId = searchParams.get("movieId") || "";
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -171,6 +172,10 @@ export async function GET(req: NextRequest) {
       where.bookingStatus = status as Prisma.EnumBookingStatusFilter;
     }
 
+    if (movieId) {
+      where.showtime = { movieId };
+    }
+
     const skip = (page - 1) * limit;
 
     const [bookings, totalCount] = await Promise.all([
@@ -179,7 +184,7 @@ export async function GET(req: NextRequest) {
         include: {
           showtime: {
             include: {
-              movie: { select: { title: true, posterUrl: true } }, // ✅ added posterUrl
+              movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
               hall: { select: { name: true } },
             },
           },
@@ -391,7 +396,7 @@ export async function POST(req: NextRequest) {
         include: {
           showtime: {
             include: {
-              movie: { select: { title: true, posterUrl: true } }, // ✅ added posterUrl
+              movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
               hall: { select: { name: true } },
             },
           },
@@ -419,3 +424,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
