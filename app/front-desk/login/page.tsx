@@ -3,102 +3,120 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Background from "@/components/layout/Background";
 
 export default function FrontDeskLogin() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-      if (result?.error) {
-        setError("Invalid email or password");
-      } else {
-        router.push("/front-desk");
-      }
-    } catch {
-      setError("An error occurred. Please try again.");
-    } finally {
+    if (!email || !password) {
+      setError("Please enter both email and password");
       setLoading(false);
+      return;
     }
-  };
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError("Invalid email or password");
+      setLoading(false);
+    } else {
+      router.push("/front-desk");
+    }
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-100 dark:bg-zinc-900">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-zinc-800 rounded-lg shadow-lg">
+    <div className="min-h-screen flex items-center justify-center">
+      <Background />
+      <div className="relative max-w-md w-full p-8 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            Front Desk Login
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mt-2">
-            Enter your credentials to access the system
+          <h2 className="text-3xl font-bold text-white tracking-wider">
+            FRONT DESK
+          </h2>
+          <p className="mt-2 text-xl text-white/80">
+            Only<span className="text-red-500 font-bold">Flex</span> 
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form className="space-y-5" onSubmit={handleSubmit}>
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md text-sm">
+            <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="frontdesk@movietickets.com"
-              required
-            />
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all"
+                placeholder="frontdesk@movietickets.com"
+              />
+            </div>
+
+            <div className="relative">
+              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all"
+                placeholder="Enter your password"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              Password
+          <div className="flex items-center justify-between">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-white/30 bg-white/10 text-red-500 focus:ring-red-500/50 focus:ring-offset-0"
+              />
+              <span className="ml-2 text-sm text-white/70">Remember me</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your password"
-              required
-            />
+            <span className="text-sm text-white/60">
+              Forgot password?
+            </span>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-        </form>
 
-        <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-          >
-            Back to Home
-          </a>
-        </div>
+          <div className="text-center">
+            <Link href="/" className="text-sm text-white/60 hover:text-white transition-colors">
+              ← Back to main site
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

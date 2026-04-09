@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Printer, X, Film, Calendar, Clock, User, Ticket } from "lucide-react";
+import { Search, Eye, Printer, X, Film, User, Ticket } from "lucide-react";
+import BookingForm from "../../../admin/(protected)/bookings/_components/BookingForm";
 
 interface Booking {
   id: string;
@@ -46,6 +47,7 @@ export default function FrontDeskBookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showForm, setShowForm] = useState(false);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -153,27 +155,27 @@ export default function FrontDeskBookingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          <h1 className="text-2xl font-bold text-white tracking-wide">
             Bookings
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-white/60 mt-1">
             Search and manage bookings
           </p>
         </div>
-        <a
-          href="/front-desk/bookings/new"
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-red-600/25"
         >
           <Ticket className="w-5 h-5" />
           New Booking
-        </a>
+        </button>
       </div>
 
-      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10">
+        <div className="p-4 border-b border-white/10">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
                 type="text"
                 placeholder="Search by booking ID, customer name or email..."
@@ -182,7 +184,7 @@ export default function FrontDeskBookingsPage() {
                   setSearchTerm(e.target.value);
                   setPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all"
               />
             </div>
           </div>
@@ -190,64 +192,64 @@ export default function FrontDeskBookingsPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-zinc-50 dark:bg-zinc-700/50">
+            <thead className="bg-white/5">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Ref</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Movie</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Showtime</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Seats</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Amount</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Ref</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Movie</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Showtime</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Seats</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
+            <tbody className="divide-y divide-white/10">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-zinc-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-white/60">
                     Loading...
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-zinc-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-white/60">
                     No bookings found
                   </td>
                 </tr>
               ) : (
                 bookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                    <td className="px-4 py-3 text-sm font-mono text-zinc-900 dark:text-zinc-100">
+                  <tr key={booking.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 text-sm font-mono text-white">
                       {booking.id.slice(-6).toUpperCase()}
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
+                    <td className="px-4 py-3 text-sm text-white">
                       {booking.showtime.movie.title}
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
+                    <td className="px-4 py-3 text-sm text-white">
                       <div>{new Date(booking.showtime.startTime).toLocaleDateString()}</div>
-                      <div className="text-zinc-500 text-xs">
+                      <div className="text-white/50 text-xs">
                         {new Date(booking.showtime.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
+                    <td className="px-4 py-3 text-sm text-white">
                       <div>{booking.user.name || "-"}</div>
-                      <div className="text-zinc-500 text-xs">{booking.user.email}</div>
+                      <div className="text-white/50 text-xs">{booking.user.email}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
+                    <td className="px-4 py-3 text-sm text-white">
                       {booking.tickets.map((t) => `${t.seat.row}${t.seat.seatNumber}`).join(", ")}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    <td className="px-4 py-3 text-sm font-medium text-white">
                       ${parseFloat(booking.finalAmount).toFixed(2)}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           booking.bookingStatus === "CONFIRMED"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                             : booking.bookingStatus === "PENDING"
-                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                            : "bg-white/10 text-white/60 border border-white/20"
                         }`}
                       >
                         {booking.bookingStatus}
@@ -257,17 +259,17 @@ export default function FrontDeskBookingsPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setSelectedBooking(booking)}
-                          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg"
+                          className="p-2 hover:bg-white/10 rounded-lg transition-all"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+                          <Eye className="w-4 h-4 text-white/60 hover:text-white" />
                         </button>
                         <button
                           onClick={() => handlePrintReceipt(booking)}
-                          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg"
+                          className="p-2 hover:bg-white/10 rounded-lg transition-all"
                           title="Print Receipt"
                         >
-                          <Printer className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+                          <Printer className="w-4 h-4 text-white/60 hover:text-white" />
                         </button>
                       </div>
                     </td>
@@ -279,21 +281,21 @@ export default function FrontDeskBookingsPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-700 flex justify-center gap-2">
+          <div className="p-4 border-t border-white/10 flex justify-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border border-zinc-300 dark:border-zinc-600 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white/80 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Previous
             </button>
-            <span className="px-3 py-1 text-zinc-600 dark:text-zinc-400">
+            <span className="px-4 py-2 text-white/60">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 border border-zinc-300 dark:border-zinc-600 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white/80 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Next
             </button>
@@ -302,34 +304,34 @@ export default function FrontDeskBookingsPage() {
       </div>
 
       {selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-800">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-black/60 backdrop-blur-xl rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-black/40 backdrop-blur-xl">
+              <h2 className="text-lg font-semibold text-white">
                 Booking Details
               </h2>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg"
+                className="p-2 hover:bg-white/10 rounded-lg transition-all"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-white/60" />
               </button>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-zinc-500 uppercase">Reference</p>
-                  <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                  <p className="text-xs text-white/50 uppercase">Reference</p>
+                  <p className="font-mono font-bold text-white">
                     {selectedBooking.id.slice(-6).toUpperCase()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500 uppercase">Status</p>
+                  <p className="text-xs text-white/50 uppercase">Status</p>
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                       selectedBooking.bookingStatus === "CONFIRMED"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                     }`}
                   >
                     {selectedBooking.bookingStatus}
@@ -337,28 +339,30 @@ export default function FrontDeskBookingsPage() {
                 </div>
               </div>
 
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg">
+              <div className="p-4 bg-white/5 border border-white/10 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <Film className="w-5 h-5 text-zinc-400" />
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <Film className="w-5 h-5 text-white/60" />
+                  </div>
                   <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="font-medium text-white">
                       {selectedBooking.showtime.movie.title}
                     </p>
-                    <p className="text-sm text-zinc-500">
+                    <p className="text-sm text-white/50">
                       {selectedBooking.showtime.hall.name}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-zinc-500">Date</p>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="text-white/50">Date</p>
+                    <p className="font-medium text-white">
                       {new Date(selectedBooking.showtime.startTime).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-zinc-500">Time</p>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="text-white/50">Time</p>
+                    <p className="font-medium text-white">
                       {new Date(selectedBooking.showtime.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
@@ -366,28 +370,30 @@ export default function FrontDeskBookingsPage() {
               </div>
 
               <div>
-                <p className="text-xs text-zinc-500 uppercase mb-2">Customer</p>
+                <p className="text-xs text-white/50 uppercase mb-2">Customer</p>
                 <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-zinc-400" />
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <User className="w-5 h-5 text-white/60" />
+                  </div>
                   <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="font-medium text-white">
                       {selectedBooking.user.name || "N/A"}
                     </p>
-                    <p className="text-sm text-zinc-500">{selectedBooking.user.email}</p>
+                    <p className="text-sm text-white/50">{selectedBooking.user.email}</p>
                     {selectedBooking.user.phone && (
-                      <p className="text-sm text-zinc-500">{selectedBooking.user.phone}</p>
+                      <p className="text-sm text-white/50">{selectedBooking.user.phone}</p>
                     )}
                   </div>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs text-zinc-500 uppercase mb-2">Seats</p>
+                <p className="text-xs text-white/50 uppercase mb-2">Seats</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedBooking.tickets.map((ticket) => (
                     <span
                       key={ticket.id}
-                      className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-sm font-medium"
+                      className="px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-sm font-medium text-white"
                     >
                       {ticket.seat.row}{ticket.seat.seatNumber} ({ticket.ticketType})
                     </span>
@@ -395,18 +401,18 @@ export default function FrontDeskBookingsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              <div className="flex justify-between items-center pt-4 border-t border-white/10">
                 <div>
-                  <p className="text-xs text-zinc-500">Total Amount</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                  <p className="text-xs text-white/50">Total Amount</p>
+                  <p className="text-2xl font-bold text-white">
                     ${parseFloat(selectedBooking.finalAmount).toFixed(2)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-white/50">
                     {selectedBooking.payment?.paymentMethod || "N/A"}
                   </p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-white/60">
                     {selectedBooking.payment?.status || "No payment"}
                   </p>
                 </div>
@@ -414,7 +420,7 @@ export default function FrontDeskBookingsPage() {
 
               <button
                 onClick={() => handlePrintReceipt(selectedBooking)}
-                className="w-full py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg font-medium hover:opacity-90 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 border border-white/20"
               >
                 <Printer className="w-4 h-4" />
                 Print Receipt
@@ -423,6 +429,13 @@ export default function FrontDeskBookingsPage() {
           </div>
         </div>
       )}
+
+      {/* Booking Form Modal */}
+      <BookingForm
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSuccess={() => { fetchBookings(); setShowForm(false); }}
+      />
     </div>
   );
 }
