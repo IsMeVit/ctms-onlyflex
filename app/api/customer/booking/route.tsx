@@ -199,6 +199,16 @@ export async function GET(req: NextRequest) {
             },
           },
           payment: true,
+          user: {
+            select: {
+              reviews: {
+                where: {
+                  movieId: undefined, // Will be computed per booking
+                },
+                select: { movieId: true },
+              },
+            },
+          },
         },
         orderBy: { [sortBy]: sortOrder },
         skip,
@@ -207,8 +217,16 @@ export async function GET(req: NextRequest) {
       prisma.booking.count({ where }),
     ]);
 
+    // Add isRated to each booking based on whether user has reviewed the movie
+    const bookingsWithRated = bookings.map((booking) => {
+      const isRated = booking.user.reviews.some(
+        (r) => r.movieId === booking.showtime?.movieId
+      );
+      return { ...booking, isRated };
+    });
+
     return NextResponse.json({
-      bookings,
+      bookings: bookingsWithRated,
       pagination: {
         page,
         limit,

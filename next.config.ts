@@ -18,11 +18,6 @@ const nextConfig = {
       },
     ],
   },
-  routes: {
-    "/customer/**": {
-      ssr: true,
-    },
-  },
 } satisfies NextConfig;
 
 export default nextConfig;
