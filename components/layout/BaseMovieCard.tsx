@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+<<<<<<< HEAD
 import { Clock } from "lucide-react";
+=======
+import { Clock, Star } from "lucide-react";
+import Image from "next/image";
+>>>>>>> e5e1fb5 (fix: resolve build errors from customer merge)
 import {
   getMovieAvailabilityState,
   getNextShowingLabel,

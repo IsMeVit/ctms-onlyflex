@@ -4,6 +4,10 @@ import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
+<<<<<<< HEAD
+=======
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
+>>>>>>> e5e1fb5 (fix: resolve build errors from customer merge)
 
 type CustomerMovieSearchProps = {
   mobile?: boolean;

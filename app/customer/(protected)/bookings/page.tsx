@@ -282,6 +282,12 @@ function BookingContent({ showtime, onBack }: BookingContentProps) {
     { number: 4, name: 'Confirmation', icon: Check },
   ];
 
+<<<<<<< HEAD
+=======
+export const dynamic = "force-dynamic";
+
+export default function BookingPage() {
+>>>>>>> e5e1fb5 (fix: resolve build errors from customer merge)
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Step indicators */}

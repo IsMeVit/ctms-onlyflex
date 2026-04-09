@@ -8,6 +8,10 @@ import {
   getMovieDetailsHref,
   isComingSoonMovie,
 } from "@/lib/movie-availability";
+<<<<<<< HEAD
+=======
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
+>>>>>>> e5e1fb5 (fix: resolve build errors from customer merge)
 
 export function ComingSoon() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());

@@ -1,7 +1,14 @@
 "use client";
 
+<<<<<<< HEAD
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+=======
+export const dynamic = "force-dynamic";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+>>>>>>> e5e1fb5 (fix: resolve build errors from customer merge)
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import BaseMovieCard from "@/components/layout/BaseMovieCard";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
