@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Calendar } from "lucide-react";
 import CustomerMovieService from "@/components/services/CustomerMovieService";
-import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 import { getMovieDetailsHref, isComingSoonMovie } from "@/lib/movie-availability";
 
 export default function ComingSoonPage() {

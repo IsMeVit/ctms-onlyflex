@@ -9,9 +9,19 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "***",
+        hostname: "external-content.duckduckgo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "image.tmdb.org",
+        pathname: "/t/p/**",
       },
     ],
+  },
+  routes: {
+    "/customer/**": {
+      ssr: true,
+    },
   },
 } satisfies NextConfig;
 

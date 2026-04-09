@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next dev",
-    "build": "next build",
+    "build": "npx prisma generate && next build",
     "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "test": "vitest run",
