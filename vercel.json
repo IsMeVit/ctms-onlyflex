@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npx prisma generate && next build",
+  "installCommand": "npm install --include=prisma",
+  "framework": "nextjs",
+  "outputs": ["public"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "runtime": "nodejs",
+      "maxDuration": 60
+    }
+  }
+}
