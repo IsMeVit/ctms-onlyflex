@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Clock } from "lucide-react";
-import { ImageWithFallback } from "@/app/sample_app/src/components/figma/ImageWithFallback";
 import {
   getMovieAvailabilityState,
   getNextShowingLabel,
@@ -83,7 +82,7 @@ export default function BaseMovieCard({
   const cardContent = (
     <>
       <div className={`relative overflow-hidden ${imageAspectClassName}`}>
-        <ImageWithFallback
+        <img
           src={movie.image || "/placeholder.png"}
           alt={movie.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
