@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import BookingPageClient from "./BookingPageClient";
+import BookingPageClient from "../(protected)/bookings/BookingPageClient";
 
 export const dynamic = "force-dynamic";
 
